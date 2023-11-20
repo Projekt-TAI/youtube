@@ -1,5 +1,4 @@
 using Microsoft.OpenApi.Models;
-using TAIBackend.routes.oauth;
 
 var builder = WebApplication.CreateBuilder(args);
 
