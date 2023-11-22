@@ -13,7 +13,7 @@ namespace TAIBackend.DataBase
                 configuration.GetConnectionString("YouTube")));
 
 
-            services.AddScoped<UsersFiller>();
+            services.AddScoped<UsersAdd>();
         }
 
 
