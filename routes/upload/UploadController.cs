@@ -1,9 +1,7 @@
-using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using NuGet.Protocol;
 
 namespace TAIBackend.routes.upload;
 
