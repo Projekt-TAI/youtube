@@ -38,7 +38,6 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/error");
 }
 
-app.UseCookiePolicy();
 app.UseAuthorization();
 app.UseAuthentication();
 app.MapControllers();
