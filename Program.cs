@@ -16,7 +16,8 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(
         policy =>
         {
-            policy.WithOrigins("*");
+            policy.WithOrigins("https://localhost:3000");
+            policy.AllowCredentials();
         });
 });
 
@@ -26,8 +27,8 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 }).AddFacebook(options =>
 {
-    options.AppId = builder.Configuration["Authentication:Facebook:AppId"] ?? throw new InvalidOperationException();
-    options.AppSecret = builder.Configuration["Authentication:Facebook:AppSecret"] ?? throw new InvalidOperationException();
+    options.AppId = "XXXXXXXX";
+    options.AppSecret = "XXXXXX";
     options.CorrelationCookie.Path = "/";
     options.AccessDeniedPath = "/access-denied";
 }).AddCookie(options =>

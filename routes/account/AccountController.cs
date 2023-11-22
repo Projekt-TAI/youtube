@@ -13,7 +13,7 @@ public class AccountController : Controller
     [HttpGet("facebook-login")]
     public IActionResult FacebookLogin()
     {
-        var properties = new AuthenticationProperties { RedirectUri = "https://locahost:3000" };
+        var properties = new AuthenticationProperties { RedirectUri = "https://localhost:3000" };
         return Challenge(properties, FacebookDefaults.AuthenticationScheme);
     }
 
