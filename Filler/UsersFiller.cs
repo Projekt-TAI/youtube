@@ -13,12 +13,12 @@ public class UsersFiller
     }
    
 
-    public async Task Seed(List<User> test)
+    public async Task Seed()
     {
         if(await _dbContext.Database.CanConnectAsync())
         {
-                       
-              foreach(var user in test)
+
+            var user = new User() { FirstName = "Ania", LastName = "Betonowska", NickName = "AniBe" };
                     _dbContext.Users.Add(user);
                 await _dbContext.SaveChangesAsync();
             

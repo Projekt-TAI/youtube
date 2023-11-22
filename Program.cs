@@ -21,25 +21,8 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-//***
-var test = new List<User>() {
-               new User()
-               {
-                   FirstName="asa",
-                   LastName="assaddd",
-                   NickName="ascxxx"
-               },
-               new User()
-               {
-                   FirstName="xxdsa",
-                   LastName="asdsadasd",
-                   NickName="asddsasdasd"
-               }
 
-            };
-//**
-
-await app.Services.CreateScope().ServiceProvider.GetRequiredService<UsersFiller>().Seed(test);
+await app.Services.CreateScope().ServiceProvider.GetRequiredService<UsersFiller>().Seed();
 
 
 app.UseSwagger();
