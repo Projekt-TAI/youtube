@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authorization;
@@ -27,10 +28,15 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 }).AddFacebook(options =>
 {
-    options.AppId = "XXXXXXXX";
-    options.AppSecret = "XXXXXX";
+
+    options.AppId = builder.Configuration["Authentication:Facebook:AppId"] ?? throw new InvalidOperationException();
+    options.AppSecret = builder.Configuration["Authentication:Facebook:AppSecret"] ?? throw new InvalidOperationException();
     options.CorrelationCookie.Path = "/";
     options.AccessDeniedPath = "/access-denied";
+    options.SaveTokens = true;
+    
+    options.Fields.Add("picture");
+    options.ClaimActions.MapCustomJson("urn:facebook:picture",claim => claim.GetProperty("picture").GetProperty("data").GetString("url"));
 }).AddCookie(options =>
 {
     options.LoginPath = "/account/facebook-login";
