@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using NuGet.Protocol;
 
 namespace TAIBackend.routes.account;
@@ -22,13 +23,13 @@ public class AccountController : Controller
 
     private class AccountDetails
     {
-        [JsonPropertyName("firstName")]
+        [JsonProperty("firstName")]
         public string? FirstName;
-        [JsonPropertyName("fullName")]
+        [JsonProperty("fullName")]
         public string? FullName;
-        [JsonPropertyName("profilePictureSrc")]
+        [JsonProperty("profilePictureSrc")]
         public string? ProfilePictureSrc;
-        [JsonPropertyName("email")]
+        [JsonProperty("email")]
         public string? Email;
     };
     
