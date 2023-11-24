@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Facebook;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,17 +12,45 @@ builder.Services.AddSwaggerGen(c =>
      c.SwaggerDoc("v1", new OpenApiInfo { Title = "TAI API", Description = "TAI Project video player api", Version = "v1.0.0" });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(
+        policy =>
+        {
+            policy.WithOrigins("https://localhost:3000");
+            policy.AllowCredentials();
+        });
+});
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = FacebookDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 }).AddFacebook(options =>
 {
+
     options.AppId = builder.Configuration["Authentication:Facebook:AppId"] ?? throw new InvalidOperationException();
-    options.AppSecret = builder.Configuration["Authentication:Facebook:AppSecret"] ??
-                        throw new InvalidOperationException();
-    options.CorrelationCookie.Path = "/"; 
-}).AddCookie();
+    options.AppSecret = builder.Configuration["Authentication:Facebook:AppSecret"] ?? throw new InvalidOperationException();
+    options.CorrelationCookie.Path = "/";
+    options.AccessDeniedPath = "/access-denied";
+    options.SaveTokens = true;
+    
+    options.Fields.Add("picture");
+    options.ClaimActions.MapCustomJson("urn:facebook:picture",claim => claim.GetProperty("picture").GetProperty("data").GetString("url"));
+}).AddCookie(options =>
+{
+    options.LoginPath = "/account/facebook-login";
+    options.Events.OnRedirectToLogin = ctx =>
+    {
+        ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = ctx =>
+    {
+        ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
 
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
@@ -38,6 +68,7 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/error");
 }
 
+app.UseCors();
 app.UseAuthorization();
 app.UseAuthentication();
 app.MapControllers();
