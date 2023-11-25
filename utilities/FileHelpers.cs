@@ -48,6 +48,13 @@ namespace TAIBackend.Utilities
                     new byte[] { 0x1a, 0x45, 0xdf, 0xa3 },
                 }
             },
+            { ".mp4", new List<byte[]>
+                {
+                    new byte[] { 0x66, 0x74, 0x79, 0x70 },
+                    new byte[] { 0x66, 0x74, 0x79, 0x70 },
+                    new byte[] { 0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70 }
+                }
+            },
         };
 
         // **WARNING!**

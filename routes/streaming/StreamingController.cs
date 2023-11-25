@@ -14,7 +14,8 @@ namespace TAIBackend.routes.streaming;
 [Route("videos")]
 public class StreamingController : Controller
 {
-    private class VideoDescriptor{
+    private class VideoDescriptor
+    {
         [JsonProperty("id")]
         public int? Id;
         [JsonProperty("title")]
@@ -24,10 +25,11 @@ public class StreamingController : Controller
 
     private readonly long _fileSizeLimit;
     private readonly ILogger<StreamingController> _logger;
-    private readonly string[] _permittedExtensions = { ".webm" };
+    private readonly string[] _permittedExtensions = { ".mp4" };
     private readonly string? _targetFilePath;
 
-    private readonly string? _ffmpegFilePath;
+    private readonly string _mp4DashPath;
+    private readonly string _mp4FragmentPath;
 
     private static readonly FormOptions _defaultFormOptions = new FormOptions();
 
@@ -36,14 +38,9 @@ public class StreamingController : Controller
     {
         _logger = logger;
         _fileSizeLimit = config.GetValue<long>("FileSizeLimit");
-
-        // To save physical files to a path provided by configuration:
         _targetFilePath = config.GetValue<string>("StoredFilesPath");
-
-        // To save physical files to the temporary files folder, use:
-        //_targetFilePath = Path.GetTempPath();
-
-        _ffmpegFilePath = config.GetValue<string>("FFMpegPath");
+        _mp4DashPath = config.GetValue<string>("MP4DashPath");
+        _mp4FragmentPath = config.GetValue<string>("MP4FragmentPath");
     }
 
     [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
@@ -75,7 +72,7 @@ public class StreamingController : Controller
         {
             return StatusCode(500);
         }
-        var userDirectory = Base64UrlTextEncoder.Encode(Encoding.ASCII.GetBytes(User.FindFirst(ClaimTypes.GivenName)!.Value));
+        var userDirectory = Base64UrlTextEncoder.Encode(Encoding.ASCII.GetBytes(User.FindFirst(ClaimTypes.NameIdentifier)!.Value));
         if (_targetFilePath == null || userDirectory == null)
         {
             return StatusCode(500);
@@ -104,22 +101,28 @@ public class StreamingController : Controller
             return BadRequest("Video id is required");
         }
 
-        var trustedFileNameForFileStorage = videoDescriptor.Id;
-        if(HttpContext.Request.Method == "POST"){
-            if(System.IO.File.Exists(Path.Combine(userPath, $"{trustedFileNameForFileStorage}.json")) || System.IO.File.Exists(Path.Combine(userPath, $"{trustedFileNameForFileStorage}.webm"))){
+
+        var videoDirectory = Path.Combine(userPath, $"{videoDescriptor.Id}");
+        Directory.CreateDirectory(videoDirectory);
+
+        var trustedFileNameForFileStorage = "video";
+        if (HttpContext.Request.Method == "POST")
+        {
+            if (System.IO.File.Exists(Path.Combine(videoDirectory, $"{trustedFileNameForFileStorage}.json")) || System.IO.File.Exists(Path.Combine(videoDirectory, $"{trustedFileNameForFileStorage}.mp4")))
+            {
                 return Conflict("The file already exists. If you want to update the content, use HTTP PUT");
             }
         }
 
         using (var targetStream = System.IO.File.Create(
-            Path.Combine(userPath, $"{trustedFileNameForFileStorage}.json")))
+            Path.Combine(videoDirectory, $"{trustedFileNameForFileStorage}.json")))
         {
             await targetStream.WriteAsync(Encoding.ASCII.GetBytes(json));
 
             _logger.LogInformation(
                 "Uploaded file config, saved to " +
-                "'{TargetFilePath}' as {TrustedFileNameForFileStorage}.json",
-                _targetFilePath,
+                "'{VideoPath}' as {TrustedFileNameForFileStorage}.json",
+                videoDirectory,
                 trustedFileNameForFileStorage);
         }
 
@@ -172,19 +175,66 @@ public class StreamingController : Controller
             }
 
             using (var targetStream = System.IO.File.Create(
-                Path.Combine(userPath, $"{trustedFileNameForFileStorage}.webm")))
+                Path.Combine(videoDirectory, $"{trustedFileNameForFileStorage}.mp4")))
             {
                 await targetStream.WriteAsync(streamedFileContent);
 
                 _logger.LogInformation(
                     "Uploaded file saved to " +
-                    "'{TargetFilePath}' as {TrustedFileNameForFileStorage}.webm",
-                    _targetFilePath,
+                    "'{VideoPath}' as {TrustedFileNameForFileStorage}.mp4",
+                    videoDirectory,
                     trustedFileNameForFileStorage);
             }
         }
 
+        if (MpegHelpers.GenerateDash(_mp4DashPath, _mp4FragmentPath, videoDirectory) != 0)
+        {
+            return StatusCode(500);
+        }
 
         return Created(nameof(StreamingController), null);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("{authorID}/{videoID}/manifest.mpd")]
+    public IActionResult GetVideoManifest(string authorID, string videoID)
+    {
+        var userDirectory = Base64UrlTextEncoder.Encode(Encoding.ASCII.GetBytes(authorID));
+        if (_targetFilePath == null || userDirectory == null)
+        {
+            return StatusCode(500);
+        }
+
+        var videoDirectory = Path.Combine(_targetFilePath, userDirectory, videoID);
+
+        return PhysicalFile(Path.Combine(videoDirectory, "stream.mpd"), "application/xml");
+    }
+
+    [AllowAnonymous]
+    [HttpGet("{authorID}/{videoID}/audio/{p1}/{p2}/{segmentNumber}")]
+    public IActionResult GetAudioSegment(string authorID, string videoID, string p1, string p2, string segmentNumber)
+    {
+        var userDirectory = Base64UrlTextEncoder.Encode(Encoding.ASCII.GetBytes(authorID));
+        if (_targetFilePath == null || userDirectory == null)
+        {
+            return StatusCode(500);
+        }
+
+        var videoDirectory = Path.Combine(_targetFilePath, userDirectory, videoID);
+        return PhysicalFile(Path.Combine(videoDirectory, "audio", p1, p2, segmentNumber), "audio/aac");
+    }
+
+    [AllowAnonymous]
+    [HttpGet("{authorID}/{videoID}/video/{p1}/{segmentNumber}")]
+    public IActionResult GetVideoSegment(string authorID, string videoID, string p1, string segmentNumber)
+    {
+        var userDirectory = Base64UrlTextEncoder.Encode(Encoding.ASCII.GetBytes(authorID));
+        if (_targetFilePath == null || userDirectory == null)
+        {
+            return StatusCode(500);
+        }
+
+        var videoDirectory = Path.Combine(_targetFilePath, userDirectory, videoID);
+        return PhysicalFile(Path.Combine(videoDirectory,"video", p1, segmentNumber), "video/mp4");
     }
 }
