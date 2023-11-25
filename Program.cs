@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Facebook;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,6 +48,12 @@ builder.Services.AddAuthentication(options =>
         ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
         return Task.CompletedTask;
     };
+    
+    /* TODO: enable when finished with dev
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+    options.Cookie.MaxAge = options.ExpireTimeSpan;
+    options.SlidingExpiration = true;
+    */
 });
 
 builder.Services.AddAuthorization();

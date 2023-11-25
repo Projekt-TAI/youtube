@@ -1,0 +1,1 @@
+-crf 25 -c:v libvpx-vp9 -f webm -dash 1 -an -vf scale=160:90 -dash 1 ${videoId}/160x90_250k.webm -an -vf scale=320:180 -dash 1 ${videoId}/320x180_500k.webm -an -vf scale=640:360 -dash 1 ${videoId}/640x360_750k.webm -an -vf scale=640:360 -b:v 1000k -dash 1 ${videoId}/640x360_1000k.webm -an -vf scale=1280:720 -b:v 1500k -dash 1 ${videoId}/1280x720_1500k.webm

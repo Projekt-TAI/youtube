@@ -1,3 +1,4 @@
+//https://github.com/dotnet/AspNetCore.Docs/blob/63a0cccbe9964f1eeeeee998930d242f9ee02e94/aspnetcore/mvc/models/file-uploads/samples/3.x/TAIBackend/Utilities/FileHelpers.cs
 using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Reflection;
@@ -5,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 
-namespace SampleApp.Utilities
+namespace TAIBackend.Utilities
 {
     public static class FileHelpers
     {
@@ -40,6 +41,11 @@ namespace SampleApp.Utilities
                     new byte[] { 0x50, 0x4B, 0x05, 0x06 },
                     new byte[] { 0x50, 0x4B, 0x07, 0x08 },
                     new byte[] { 0x57, 0x69, 0x6E, 0x5A, 0x69, 0x70 },
+                }
+            },
+            { ".webm", new List<byte[]>
+                {
+                    new byte[] { 0x1a, 0x45, 0xdf, 0xa3 },
                 }
             },
         };
