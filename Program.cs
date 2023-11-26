@@ -34,8 +34,8 @@ builder.Services.AddAuthentication(options =>
 }).AddFacebook(options =>
 {
 
-    options.AppId = builder.Configuration["Authentication:Facebook:AppId"] ?? throw new InvalidOperationException();
-    options.AppSecret = builder.Configuration["Authentication:Facebook:AppSecret"] ?? throw new InvalidOperationException();
+    options.AppId = Environment.GetEnvironmentVariable("APP_ID") ?? throw new InvalidOperationException();
+    options.AppSecret = Environment.GetEnvironmentVariable("APP_SECRET") ?? throw new InvalidOperationException();
     options.CorrelationCookie.Path = "/";
     options.AccessDeniedPath = "/access-denied";
     options.SaveTokens = true;
