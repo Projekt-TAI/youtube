@@ -26,5 +26,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: taibackend/backend:${{ github.event.head_commit.message }}
-
+          tags: taibackend/backend:${{ github.sha }}
+      -
+        name: Deploy to GKE
+        
