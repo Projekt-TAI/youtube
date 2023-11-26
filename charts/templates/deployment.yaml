@@ -19,9 +19,19 @@ spec:
       - name: tai
         image: "taibackend/backend:{{ .Values.image }}"
         command: ["dotnet"]
-        args: ["TAIBackend.dll", "--urls", "http://localhost:5001"]
+        args: ["TAIBackend.dll", "--urls", "http://0.0.0.0:5001"]
         ports:
         - containerPort: 5001
+        livenessProbe:
+          httpGet:
+            path: /readyz
+            port: 5001
+            scheme: HTTP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 5001
+            scheme: HTTP
         resources:
           limits:
             memory: 100Mi
