@@ -79,6 +79,15 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/error");
 }
 
+app.Use((context, next) =>
+{
+  if (context.Request.Headers["x-forwarded-proto"] == "https")
+  {
+    context.Request.Scheme = "https";
+  }
+  return next();
+});
+
 app.UseCors();
 app.UseAuthorization();
 app.UseAuthentication();
