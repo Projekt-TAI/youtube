@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Facebook;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,12 +7,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-     c.SwaggerDoc("v1", new OpenApiInfo { Title = "TAI API", Description = "TAI Project video player api", Version = "v1.0.0" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "TAI API", Description = "TAI Project video player api", Version = "v1.0.0" });
 });
 
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(
+        policy =>
+        {
+            policy.WithOrigins("*");
+        });
+
+
+    options.AddPolicy("AuthenticatedPolicy",
         policy =>
         {
             policy.WithOrigins("https://localhost:3000");
@@ -29,14 +34,14 @@ builder.Services.AddAuthentication(options =>
 }).AddFacebook(options =>
 {
 
-    options.AppId = builder.Configuration["Authentication:Facebook:AppId"] ?? throw new InvalidOperationException();
-    options.AppSecret = builder.Configuration["Authentication:Facebook:AppSecret"] ?? throw new InvalidOperationException();
+    options.AppId = Environment.GetEnvironmentVariable("APP_ID") ?? throw new InvalidOperationException();
+    options.AppSecret = Environment.GetEnvironmentVariable("APP_SECRET") ?? throw new InvalidOperationException();
     options.CorrelationCookie.Path = "/";
     options.AccessDeniedPath = "/access-denied";
     options.SaveTokens = true;
-    
+
     options.Fields.Add("picture");
-    options.ClaimActions.MapCustomJson("urn:facebook:picture",claim => claim.GetProperty("picture").GetProperty("data").GetString("url"));
+    options.ClaimActions.MapCustomJson("urn:facebook:picture", claim => claim.GetProperty("picture").GetProperty("data").GetString("url"));
 }).AddCookie(options =>
 {
     options.LoginPath = "/account/facebook-login";
@@ -50,6 +55,12 @@ builder.Services.AddAuthentication(options =>
         ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
         return Task.CompletedTask;
     };
+
+    /* TODO: enable when finished with dev
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+    options.Cookie.MaxAge = options.ExpireTimeSpan;
+    options.SlidingExpiration = true;
+    */
 });
 
 builder.Services.AddAuthorization();
@@ -60,7 +71,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-   c.SwaggerEndpoint("/swagger/v1/swagger.json", "TAI API V1");
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "TAI API V1");
 });
 
 if (!app.Environment.IsDevelopment())
