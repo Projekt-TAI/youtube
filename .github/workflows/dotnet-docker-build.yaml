@@ -26,5 +26,5 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: taibackend/backend:${{ github.head_ref }}.${{ github.sha }}
+          tags: taibackend/backend:${{ github.sha }}
 
