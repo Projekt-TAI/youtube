@@ -44,6 +44,7 @@ builder.Services.AddAuthentication(options =>
     options.ClaimActions.MapCustomJson("urn:facebook:picture", claim => claim.GetProperty("picture").GetProperty("data").GetString("url"));
 }).AddCookie(options =>
 {
+    options.Cookie.SameSite = SameSiteMode.None;
     options.LoginPath = "/account/facebook-login";
     options.Events.OnRedirectToLogin = ctx =>
     {
