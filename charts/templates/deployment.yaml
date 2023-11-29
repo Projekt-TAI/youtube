@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tai-backend
+  namespace: tai
+  labels:
+    app: tai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tai
+  template:
+    metadata:
+      labels:
+        app: tai
+    spec:
+      containers:
+      - name: tai
+        image: "taibackend/backend:{{ .Values.image }}"
+        command: ["dotnet"]
+        args: ["TAIBackend.dll", "--urls", "http://0.0.0.0:5001"]
+        ports:
+        - containerPort: 5001
+        livenessProbe:
+          httpGet:
+            path: /readyz
+            port: 5001
+            scheme: HTTP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 5001
+            scheme: HTTP
+        resources:
+          limits:
+            memory: 100Mi
+            cpu: 100m
+          requests:
+            memory: 100Mi
+            cpu: 100m
+        env:
+          - name:  APP_ID
+            valueFrom:
+              secretKeyRef:
+                name: facebook
+                key:  APP_ID
+          - name:  APP_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: facebook
+                key:  APP_SECRET

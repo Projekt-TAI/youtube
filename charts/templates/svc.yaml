@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tai-service
+  namespace: tai
+spec:
+  selector:
+    app: tai
+  ports:
+    - protocol: TCP
+      port: 5001
