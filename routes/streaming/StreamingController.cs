@@ -83,7 +83,8 @@ public class StreamingController : Controller
         }
 
         var section = await reader.ReadNextSectionAsync();
-        string title, description = "";
+        var title = "";
+        var description = "";
         bool gotFile = false;
 
         while (section != null)
@@ -178,7 +179,7 @@ public class StreamingController : Controller
             section = await reader.ReadNextSectionAsync();
         }
 
-        if (!gotFile)
+        if (!gotFile || String.IsNullOrWhiteSpace(title))
         {
             return BadRequest();
         }
