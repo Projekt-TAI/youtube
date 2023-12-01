@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.OpenApi.Models;
-using TAIBackend.Entities;
 using TAIBackend.DataBase;
 using TAIBackend.Filler;
 using System;
