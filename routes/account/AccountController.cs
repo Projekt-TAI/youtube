@@ -19,7 +19,8 @@ public class AccountController : Controller
     [HttpGet("facebook-login")]
     public IActionResult FacebookLogin()
     {
-        var properties = new AuthenticationProperties { RedirectUri = "https://localhost:3000" };
+        var referer = HttpContext.Request.Headers.Referer;
+        var properties = new AuthenticationProperties { RedirectUri = referer };
         return Challenge(properties, FacebookDefaults.AuthenticationScheme);
     }
 

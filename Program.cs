@@ -15,14 +15,15 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(
         policy =>
         {
-            policy.WithOrigins("*");
+            policy.WithOrigins("https://localhost:3000", "https://localhost:5000");
+            policy.AllowCredentials();
         });
 
 
     options.AddPolicy("AuthenticatedPolicy",
         policy =>
         {
-            policy.WithOrigins("https://localhost:3000");
+            policy.WithOrigins("https://localhost:3000", "https://localhost:5000");
             policy.AllowCredentials();
         });
 });

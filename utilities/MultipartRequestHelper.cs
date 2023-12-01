@@ -66,5 +66,15 @@ namespace TAIBackend.Utilities
                 && (!string.IsNullOrEmpty(contentDisposition.FileName.Value)
                     || !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value));
         }
+
+        public static bool HasFormDataTextContentDisposition(ContentDispositionHeaderValue contentDisposition)
+        {
+            // Content-Disposition: form-data; name="title";
+            return contentDisposition != null
+                && contentDisposition.DispositionType.Equals("form-data")
+                && string.IsNullOrEmpty(contentDisposition.FileName.Value)
+                && string.IsNullOrEmpty(contentDisposition.FileNameStar.Value)
+                && (!string.IsNullOrEmpty(contentDisposition.Name.Value));
+        }
     }
 }
