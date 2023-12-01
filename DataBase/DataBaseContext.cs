@@ -1,6 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
-using System.Configuration;
 using TAIBackend.Entities;
 
 namespace TAIBackend.DataBase
