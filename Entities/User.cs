@@ -1,5 +1,3 @@
-﻿using System.ComponentModel;
-
 namespace TAIBackend.Entities
 {
     public class User
