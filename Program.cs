@@ -1,10 +1,14 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.OpenApi.Models;
+using TAIBackend.DataBase;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddInfrastructure(builder.Configuration);
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "TAI API", Description = "TAI Project video player api", Version = "v1.0.0" });
@@ -70,6 +74,7 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -96,3 +101,4 @@ app.UseAuthentication();
 app.MapControllers();
 
 app.Run();
+
