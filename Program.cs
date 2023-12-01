@@ -2,10 +2,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.OpenApi.Models;
 using TAIBackend.DataBase;
-using TAIBackend.Filler;
-using System;
-using System.Net.NetworkInformation;
-using System.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
