@@ -93,7 +93,6 @@ public class StreamingController : Controller
         Directory.CreateDirectory(videoDirectory);
 
         var trustedFileNameForFileStorage = "video";
-
         var section = await reader.ReadNextSectionAsync();
         var title = "";
         var description = "";
