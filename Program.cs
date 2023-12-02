@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using TAIBackend.Model;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "TAI API", Description = "TAI Project video player api", Version = "v1.0.0" });
@@ -27,6 +30,9 @@ builder.Services.AddCors(options =>
             policy.AllowCredentials();
         });
 });
+
+builder.Services.AddDbContext<YoutubeContext>(options =>
+            options.UseInMemoryDatabase("youtube"));
 
 builder.Services.AddAuthentication(options =>
 {
@@ -70,6 +76,7 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -83,16 +90,18 @@ if (!app.Environment.IsDevelopment())
 
 app.Use((context, next) =>
 {
-  if (context.Request.Headers["x-forwarded-proto"] == "https")
-  {
-    context.Request.Scheme = "https";
-  }
-  return next();
+    if (context.Request.Headers["x-forwarded-proto"] == "https")
+    {
+        context.Request.Scheme = "https";
+    }
+    return next();
 });
 
 app.UseCors();
 app.UseAuthorization();
 app.UseAuthentication();
 app.MapControllers();
+app.UseUserAccountMiddleware();
 
 app.Run();
+
