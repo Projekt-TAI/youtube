@@ -1,13 +1,12 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using TAIBackend.DataBase;
+using TAIBackend.Model;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
-
-builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddSwaggerGen(c =>
 {
@@ -31,6 +30,9 @@ builder.Services.AddCors(options =>
             policy.AllowCredentials();
         });
 });
+
+builder.Services.AddDbContext<YoutubeContext>(options =>
+            options.UseInMemoryDatabase("youtube"));
 
 builder.Services.AddAuthentication(options =>
 {
@@ -88,17 +90,18 @@ if (!app.Environment.IsDevelopment())
 
 app.Use((context, next) =>
 {
-  if (context.Request.Headers["x-forwarded-proto"] == "https")
-  {
-    context.Request.Scheme = "https";
-  }
-  return next();
+    if (context.Request.Headers["x-forwarded-proto"] == "https")
+    {
+        context.Request.Scheme = "https";
+    }
+    return next();
 });
 
 app.UseCors();
 app.UseAuthorization();
 app.UseAuthentication();
 app.MapControllers();
+app.UseUserAccountMiddleware();
 
 app.Run();
 
