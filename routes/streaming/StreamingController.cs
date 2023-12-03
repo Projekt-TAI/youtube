@@ -40,7 +40,7 @@ public class StreamingController : Controller
     public async Task<IActionResult> GetVideos(YoutubeContext db)
     {
         var accs = await db.Videos.ToListAsync();
-        return Ok(accs?.ToArray().Select(video => new { video.Id, video.Title, video.Description, video.Category }).ToJson() ?? "null");
+        return Ok(accs?.ToArray().Select(video => new { id = video.Id, title = video.Title, description =  video.Description, category = video.Category }).ToJson() ?? "null");
     }
 
 
@@ -211,7 +211,7 @@ public class StreamingController : Controller
 
         await db.SaveChangesAsync();
 
-        return Content(new { video.Id, video.Title, video.Description }.ToJson(), "application/json");
+        return Content(new { id = video.Id, title = video.Title, description = video.Description }.ToJson(), "application/json");
     }
 
     [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
@@ -396,7 +396,7 @@ public class StreamingController : Controller
         db.Add(video);
         await db.SaveChangesAsync();
 
-        return StatusCode(201, new { video.Id, video.Title, video.Description, video.Category }.ToJson());
+        return StatusCode(201, new { id = video.Id, title = video.Title, description = video.Description, category = video.Category }.ToJson());
     }
 
     [AllowAnonymous]
