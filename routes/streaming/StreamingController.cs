@@ -41,7 +41,7 @@ public class StreamingController : Controller
     {
         var vids = await db.Videos.Skip(pageNumber! * pageSize).Take(pageSize).ToListAsync();
 
-        return Ok(new {data = vids?.ToArray().Select(video => new { id = video.Id, title = video.Title, description = video.Description, category = video.Category }), count = db.Videos.Count()});
+        return Ok(new {data = vids?.ToArray().Select(video => new { id = video.Id, authorID = video.Owneraccountid, title = video.Title, description = video.Description, category = video.Category, createdAt = video.CreatedAt.ToUniversalTime() }), count = db.Videos.Count()});
     }
 
 
