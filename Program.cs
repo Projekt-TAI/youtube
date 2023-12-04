@@ -18,7 +18,7 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(
         policy =>
         {
-            policy.WithOrigins("https://localhost:3000", "https://localhost:5000");
+            policy.WithOrigins("https://localhost:3000", "https://localhost:5000", "https://youtube-tai.netlify.app");
             policy.AllowCredentials();
         });
 
@@ -26,7 +26,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AuthenticatedPolicy",
         policy =>
         {
-            policy.WithOrigins("https://localhost:3000", "https://localhost:5000");
+            policy.WithOrigins("https://localhost:3000", "https://localhost:5000", "https://youtube-tai.netlify.app");
             policy.AllowCredentials();
         });
 });

@@ -39,8 +39,39 @@ public class StreamingController : Controller
     [HttpGet(""), HttpGet("/")]
     public async Task<IActionResult> GetVideos(YoutubeContext db)
     {
-        var accs = await db.Videos.ToListAsync();
-        return Ok(accs?.ToArray().Select(video => new { id = video.Id, title = video.Title, description =  video.Description, category = video.Category }).ToJson() ?? "null");
+        // ?pageNumber=1&pageSize=20
+        string? pageNumber = HttpContext.Request.Query["pageNumber"];
+        string? pageSize = HttpContext.Request.Query["pageSize"];
+        int? pageSizeInt = null;
+        int? pageNumberInt = null;
+        if (pageNumber != null)
+        {
+            pageNumberInt = int.Parse(pageNumber);
+        }
+
+        if (pageSize != null)
+        {
+            pageSizeInt = int.Parse(pageSize);
+        }
+        List<Video>? vids = null;
+
+        if (pageSizeInt != null)
+        {
+            if (pageNumberInt != null)
+            {
+                vids = await db.Videos.Skip((int)(pageNumberInt! * pageSizeInt!)).Take((int)pageSizeInt).ToListAsync();
+            }
+            else
+            {
+                vids = await db.Videos.Take((int)pageSizeInt).ToListAsync();
+            }
+        }
+        else
+        {
+            vids = await db.Videos.ToListAsync();
+        }
+
+        return Ok(vids?.ToArray().Select(video => new { id = video.Id, title = video.Title, description = video.Description, category = video.Category }).ToJson() ?? "null");
     }
 
 
