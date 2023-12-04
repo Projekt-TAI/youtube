@@ -12,6 +12,8 @@ RUN dotnet restore tai.sln
 # copy everything else and build app
 COPY routes routes
 COPY utilities utilities
+COPY Model Model
+COPY Middleware Middleware
 RUN dotnet publish -c release -o /app --no-restore tai.sln
 RUN dotnet dev-certs https --clean
 RUN dotnet dev-certs https --trust
