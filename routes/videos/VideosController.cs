@@ -91,6 +91,25 @@ public class VideosController : Controller
 
         return PhysicalFile(Path.Combine(videoDirectory, "stream.mpd"), "application/xml");
     }
+    
+    [HttpGet("{videoID}/thumbnail.jpg")]
+    public async Task<IActionResult> GetVideoThumbnail(YoutubeContext db, int videoID)
+    {
+        if (_targetFilePath == null)
+        {
+            return StatusCode(500);
+        }
+
+        var vid = await db.Videos.SingleAsync(v => v.Id == videoID);
+
+        var videoDirectory = Path.Combine(_targetFilePath, vid.Owneraccountid.ToString(), videoID.ToString());
+        if (!Path.Exists(Path.Combine(videoDirectory, "thumbnail.jpg")))
+        {
+            return NotFound("Thumbnail doesn't exists");
+        }
+
+        return PhysicalFile(Path.Combine(videoDirectory, "thumbnail.jpg"), "image/jpg");
+    }
 
     [HttpGet("{authorID}/{videoID}/audio/{p1}/{p2}/{segmentNumber}")]
     public IActionResult GetAudioSegment(string authorID, string videoID, string p1, string p2, string segmentNumber)
