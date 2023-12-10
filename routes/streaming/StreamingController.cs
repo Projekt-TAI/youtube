@@ -377,8 +377,6 @@ public class StreamingController : Controller
             video.Category = int.Parse(category);
         }
 
-        video.ThumbnailSrc = Path.Combine(videoDirectory, "thumbnail.jpg");
-
         var owner = await db.Accounts.FindAsync(Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value));
         if (owner == null)
         {
