@@ -28,7 +28,7 @@ public class VideosController : Controller
             {
                 id = video.Id, authorID = video.Owneraccountid, title = video.Title, description = video.Description,
                 category = video.Category, createdAt = video.CreatedAt.ToUniversalTime(), views = video.Views,
-                thumbnailSrc = $"{HttpContext.Request.Host}/videos/{video.Id}/thumbnail.jpg"
+                thumbnailSrc = $"videos/{video.Id}/thumbnail.jpg"
             }),
             count = db.Videos.Count()
         });
@@ -156,7 +156,7 @@ public class VideosController : Controller
             .Select(video => new
             {
                 video.Id, video.Title, video.Description, video.Category, views = video.Views,
-                thumbnailSrc = $"{HttpContext.Request.Host}/videos/{video.Id}/thumbnail.jpg"
+                thumbnailSrc = $"videos/{video.Id}/thumbnail.jpg"
             })
             .ToJson() ?? "null");
     }
