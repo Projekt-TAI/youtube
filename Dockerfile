@@ -30,6 +30,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 RUN apt update
 RUN apt install python3 -y
+RUN apt install ffmpeg -y
 COPY --from=build /app ./
 #COPY --from=build /root/.dotnet/corefx/cryptography/x509stores/my/* /root/.dotnet/corefx/cryptography/x509stores/my/
 COPY --from=tools /tools ./tools
