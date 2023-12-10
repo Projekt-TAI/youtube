@@ -34,16 +34,7 @@ public class StreamingController : Controller
         _mp4DashPath = config.GetValue<string>("MP4DashPath") ?? throw new InvalidOperationException();
         _mp4FragmentPath = config.GetValue<string>("MP4FragmentPath") ?? throw new InvalidOperationException();
     }
-
-    [AllowAnonymous]
-    [HttpGet(""), HttpGet("/")]
-    public async Task<IActionResult> GetVideos(YoutubeContext db)
-    {
-        var accs = await db.Videos.ToListAsync();
-        return Ok(accs?.ToArray().Select(video => new { video.Id, video.Title, video.Description, video.Category }).ToJson() ?? "null");
-    }
-
-
+    
     [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
     [HttpPut("upload/{id}")]
     [RequiresUserAccount]
@@ -397,93 +388,5 @@ public class StreamingController : Controller
         await db.SaveChangesAsync();
 
         return StatusCode(201, new { video.Id, video.Title, video.Description, video.Category }.ToJson());
-    }
-
-    [AllowAnonymous]
-    [HttpGet("{videoID}/manifest.mpd")]
-    public async Task<IActionResult> GetVideoManifestFromID(YoutubeContext db, int id)
-    {
-        Video? video = await db.Videos.FindAsync(id);
-        if (video == null)
-        {
-            return NotFound("Video with specified id does not exist");
-        }
-        return GetVideoManifest(video.Owneraccountid.ToString(), video.Id.ToString());
-    }
-
-    [AllowAnonymous]
-    [HttpGet("{videoID}/audio/{p1}/{p2}/{segmentNumber}")]
-    public async Task<IActionResult> GetAudioSegmentFromID(YoutubeContext db, int videoID, string p1, string p2, string segmentNumber)
-    {
-        Video? video = await db.Videos.FindAsync(videoID);
-        if (video == null)
-        {
-            return NotFound("Video with specified id does not exist");
-        }
-        return GetAudioSegment(video.Owneraccountid.ToString(), video.Id.ToString(), p1, p2, segmentNumber);
-    }
-
-    [AllowAnonymous]
-    [HttpGet("{videoID}/video/{p1}/{segmentNumber}")]
-    public async Task<IActionResult> GetVideoSegmentFromID(YoutubeContext db, int videoID, string p1, string segmentNumber)
-    {
-        Video? video = await db.Videos.FindAsync(videoID);
-        if (video == null)
-        {
-            return NotFound("Video with specified id does not exist");
-        }
-        return GetVideoSegment(video.Owneraccountid.ToString(), video.Id.ToString(), p1, segmentNumber);
-    }
-
-    [AllowAnonymous]
-    [HttpGet("{authorID}/{videoID}/manifest.mpd")]
-    public IActionResult GetVideoManifest(string authorID, string videoID)
-    {
-        if (_targetFilePath == null)
-        {
-            return StatusCode(500);
-        }
-
-        var videoDirectory = Path.Combine(_targetFilePath, authorID, videoID);
-        if (!Path.Exists(Path.Combine(videoDirectory, "stream.mpd")))
-        {
-            return NotFound("DASH manifest doesn't exists");
-        }
-
-        return PhysicalFile(Path.Combine(videoDirectory, "stream.mpd"), "application/xml");
-    }
-
-    [AllowAnonymous]
-    [HttpGet("{authorID}/{videoID}/audio/{p1}/{p2}/{segmentNumber}")]
-    public IActionResult GetAudioSegment(string authorID, string videoID, string p1, string p2, string segmentNumber)
-    {
-        if (_targetFilePath == null)
-        {
-            return StatusCode(500);
-        }
-
-        var videoDirectory = Path.Combine(_targetFilePath, authorID, videoID);
-        if (!Path.Exists(Path.Combine(videoDirectory, "audio", p1, p2, segmentNumber)))
-        {
-            return NotFound("Audio segment doesn't exists");
-        }
-        return PhysicalFile(Path.Combine(videoDirectory, "audio", p1, p2, segmentNumber), "audio/aac");
-    }
-
-    [AllowAnonymous]
-    [HttpGet("{authorID}/{videoID}/video/{p1}/{segmentNumber}")]
-    public IActionResult GetVideoSegment(string authorID, string videoID, string p1, string segmentNumber)
-    {
-        if (_targetFilePath == null)
-        {
-            return StatusCode(500);
-        }
-
-        var videoDirectory = Path.Combine(_targetFilePath, authorID, videoID);
-        if (!Path.Exists(Path.Combine(videoDirectory, "video", p1, segmentNumber)))
-        {
-            return NotFound("Video segment doesn't exists");
-        }
-        return PhysicalFile(Path.Combine(videoDirectory, "video", p1, segmentNumber), "video/mp4");
     }
 }

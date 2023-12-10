@@ -13,6 +13,8 @@ public partial class Account
 
     public string Email { get; set; } = null!;
 
+    public string ProfilePicUrl { get; set; } = null!;
+
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
 
     public virtual ICollection<Like> Likes { get; set; } = new List<Like>();
