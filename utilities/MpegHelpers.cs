@@ -4,6 +4,31 @@ namespace TAIBackend.Utilities
 {
     public static class MpegHelpers
     {
+        public static Boolean GetThumbnail(string video, string thumbnail)
+        {
+            var cmd = "ffmpeg -hide_banner -loglevel error -y  -itsoffset -1  -i " + '"' + video + '"' + " -vcodec mjpeg -vframes 1 -an -f rawvideo -s 320x240 " + '"' + thumbnail + '"';
+
+            var startInfo = new ProcessStartInfo
+            {
+                WindowStyle = ProcessWindowStyle.Hidden,
+                FileName = "cmd.exe",
+                Arguments = "/C " + cmd,
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
+
+            var process = new Process
+            {
+                StartInfo = startInfo
+            };
+
+            process.Start();
+            process.WaitForExit(5000);
+
+            process.StandardOutput.ReadToEnd();
+            return process.ExitCode == 0;
+        }
+
         public static int GenerateDash(string mp4dashPath, string mp4fragmentPath, string videoDirectory)
         {
             var inputFilePath = Path.Join(videoDirectory, "video");
@@ -18,10 +43,10 @@ namespace TAIBackend.Utilities
                 return 1;
             }
 
-            var ffMpeg = new NReco.VideoConverter.FFMpegConverter();
-            var thumbStream = File.OpenWrite(Path.Join(videoDirectory, "thumbnail.jpg"));
-            ffMpeg.GetVideoThumbnail($"{inputFilePath}.mp4", thumbStream);
-            thumbStream.Close();
+            if (!GetThumbnail($"{inputFilePath}.mp4",$"{videoDirectory}/thumbnail.jpg"))
+            {
+                return 1;
+            }
 
             return 0;
         }
