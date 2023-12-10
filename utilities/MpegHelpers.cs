@@ -6,12 +6,12 @@ namespace TAIBackend.Utilities
     {
         public static Boolean GetThumbnail(string video, string thumbnail)
         {
-            var cmd = "ffmpeg -hide_banner -loglevel error -y  -itsoffset -1  -i " + '"' + video + '"' + " -vcodec mjpeg -vframes 1 -an -f rawvideo -s 320x240 " + '"' + thumbnail + '"';
+            var cmd = "-hide_banner -loglevel error -y  -itsoffset -1  -i " + '"' + video + '"' + " -vcodec mjpeg -vframes 1 -an -f rawvideo -s 320x240 " + '"' + thumbnail + '"';
 
             var startInfo = new ProcessStartInfo
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
-                FileName = "/usr/bin/bash",
+                FileName = "/usr/bin/ffmpeg",
                 Arguments = cmd,
                 UseShellExecute = false,
                 RedirectStandardOutput = true
