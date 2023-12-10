@@ -27,7 +27,8 @@ public class VideosController : Controller
             data = vids.ToArray().Select(video => new
             {
                 id = video.Id, authorID = video.Owneraccountid, title = video.Title, description = video.Description,
-                category = video.Category, createdAt = video.CreatedAt.ToUniversalTime(), views = video.Views, thumbnailSrc = video.ThumbnailSrc
+                category = video.Category, createdAt = video.CreatedAt.ToUniversalTime(), views = video.Views,
+                thumbnailSrc = $"{HttpContext.Request.Host}/videos/{video.Id}/thumbnail.jpg"
             }),
             count = db.Videos.Count()
         });
@@ -91,7 +92,7 @@ public class VideosController : Controller
 
         return PhysicalFile(Path.Combine(videoDirectory, "stream.mpd"), "application/xml");
     }
-    
+
     [HttpGet("{videoID}/thumbnail.jpg")]
     public async Task<IActionResult> GetVideoThumbnail(YoutubeContext db, int videoID)
     {
@@ -152,7 +153,11 @@ public class VideosController : Controller
         var accs = await db.Videos.Where(v => v.Owneraccountid == authorId).OrderByDescending(v => v.Id)
             .Skip(pageNumber * pageSize).Take(pageSize).ToListAsync();
         return Ok(accs?.ToArray()
-            .Select(video => new { video.Id, video.Title, video.Description, video.Category, views = video.Views, thumbnailSrc = video.ThumbnailSrc })
+            .Select(video => new
+            {
+                video.Id, video.Title, video.Description, video.Category, views = video.Views,
+                thumbnailSrc = $"{HttpContext.Request.Host}/videos/{video.Id}/thumbnail.jpg"
+            })
             .ToJson() ?? "null");
     }
 }

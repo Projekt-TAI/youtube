@@ -20,8 +20,6 @@ public partial class Video
 
     public int Category { get; set; } = 0;
 
-    public string ThumbnailSrc { get; set; } = "";
-
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
 
     public virtual ICollection<Like> Likes { get; set; } = new List<Like>();
