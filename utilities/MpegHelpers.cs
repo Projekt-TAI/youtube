@@ -11,12 +11,17 @@ namespace TAIBackend.Utilities
             if (!RunProcess(mp4fragmentPath, $"{inputFilePath}.mp4 {inputFilePath}-fragmented.mp4"))
             {
                 return 1;
-            };
+            }
 
             if (!RunProcess(mp4dashPath, $"{inputFilePath}-fragmented.mp4 -o {videoDirectory} -f"))
             {
                 return 1;
-            };
+            }
+
+            var ffMpeg = new NReco.VideoConverter.FFMpegConverter();
+            var thumbStream = File.OpenWrite(Path.Join(videoDirectory, "thumbnail.jpg"));
+            ffMpeg.GetVideoThumbnail($"{inputFilePath}.mp4", thumbStream);
+            thumbStream.Close();
 
             return 0;
         }
@@ -47,4 +52,3 @@ namespace TAIBackend.Utilities
         }
     }
 }
-
