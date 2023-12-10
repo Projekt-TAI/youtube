@@ -7,7 +7,7 @@ namespace TAIBackend.Model;
 public partial class Video
 {
     public DateTime CreatedAt {get; private set;} = DateTime.UtcNow;
-    
+
     public int Id { get; set; }
 
     public string Title { get; set; } = null!;

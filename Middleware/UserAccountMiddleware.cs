@@ -49,6 +49,7 @@ public class UserAccountMiddleware
         if (User.FindFirst(ClaimTypes.NameIdentifier) == null ||
             User.FindFirst(ClaimTypes.GivenName) == null ||
             User.FindFirst(ClaimTypes.Name) == null ||
+            User.FindFirst("urn:facebook:picture") == null ||
             User.FindFirst(ClaimTypes.Email) == null)
         {
             return false;
@@ -59,7 +60,8 @@ public class UserAccountMiddleware
             Id = Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
             Firstname = User.FindFirst(ClaimTypes.GivenName)!.Value,
             Fullname = User.FindFirst(ClaimTypes.Name)!.Value,
-            Email = User.FindFirst(ClaimTypes.Email)!.Value
+            Email = User.FindFirst(ClaimTypes.Email)!.Value,
+            ProfilePicUrl = User.FindFirst("urn:facebook:picture")!.Value
         };
 
         if ((await _dbContext.Accounts.FindAsync(account.Id)) == null)

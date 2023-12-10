@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using NuGet.Protocol;
+using TAIBackend.Model;
 
 namespace TAIBackend.routes.account;
 
@@ -33,5 +35,13 @@ public class AccountController : Controller
             profilePictureSrc = User.FindFirst("urn:facebook:picture")?.Value,
             email = User.FindFirst(ClaimTypes.Email)?.Value
         }.ToJson(), "application/json");
+    }
+
+    [AllowAnonymous]
+    [HttpGet("userPic/{userId}")]
+    public async Task<IActionResult> GetUserProfilePicture(YoutubeContext db, long userId)
+    {
+        var user = await db.Accounts.SingleAsync(a => a.Id == userId);
+        return Ok(new{profilePicUrl = user.ProfilePicUrl});
     }
 }
