@@ -11,8 +11,8 @@ namespace TAIBackend.Utilities
             var startInfo = new ProcessStartInfo
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
-                FileName = "cmd.exe",
-                Arguments = "/C " + cmd,
+                FileName = "/usr/bin/bash",
+                Arguments = cmd,
                 UseShellExecute = false,
                 RedirectStandardOutput = true
             };
