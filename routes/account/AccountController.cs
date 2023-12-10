@@ -25,30 +25,16 @@ public class AccountController : Controller
         return Challenge(properties, FacebookDefaults.AuthenticationScheme);
     }
 
-    private class AccountDetails
-    {
-        [JsonProperty("firstName")]
-        public string? FirstName;
-        [JsonProperty("fullName")]
-        public string? FullName;
-        [JsonProperty("profilePictureSrc")]
-        public string? ProfilePictureSrc;
-        [JsonProperty("email")]
-        public string? Email;
-    };
-    
     [HttpGet("details")]
     public IActionResult Details()
     {
-        var accountDetails = new AccountDetails
+        return Content(new
         {
-            FirstName = User.FindFirst(ClaimTypes.GivenName)?.Value,
-            FullName = User.FindFirst(ClaimTypes.Name)?.Value,
-            ProfilePictureSrc = User.FindFirst("urn:facebook:picture")?.Value,
-            Email = User.FindFirst(ClaimTypes.Email)?.Value
-        };
-
-        return Content(accountDetails.ToJson(), "application/json");
+            firstName = User.FindFirst(ClaimTypes.GivenName)?.Value,
+            fullName = User.FindFirst(ClaimTypes.Name)?.Value,
+            profilePictureSrc = User.FindFirst("urn:facebook:picture")?.Value,
+            email = User.FindFirst(ClaimTypes.Email)?.Value
+        }.ToJson(), "application/json");
     }
 
     [AllowAnonymous]

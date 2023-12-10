@@ -26,7 +26,7 @@ public class StreamingController : Controller
     private static readonly FormOptions _defaultFormOptions = new FormOptions();
 
     public StreamingController(ILogger<StreamingController> logger,
-         IConfiguration config)
+        IConfiguration config)
     {
         _logger = logger;
         _fileSizeLimit = config.GetValue<long>("FileSizeLimit");
@@ -34,7 +34,7 @@ public class StreamingController : Controller
         _mp4DashPath = config.GetValue<string>("MP4DashPath") ?? throw new InvalidOperationException();
         _mp4FragmentPath = config.GetValue<string>("MP4FragmentPath") ?? throw new InvalidOperationException();
     }
-    
+
     [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
     [HttpPut("upload/{id}")]
     [RequiresUserAccount]
@@ -201,8 +201,8 @@ public class StreamingController : Controller
         }
 
         await db.SaveChangesAsync();
-
-        return Content(new { video.Id, video.Title, video.Description }.ToJson(), "application/json");
+        
+        return Content(new { id = video.Id, title = video.Title, description = video.Description }.ToJson(), "application/json");
     }
 
     [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
@@ -387,6 +387,6 @@ public class StreamingController : Controller
         db.Add(video);
         await db.SaveChangesAsync();
 
-        return StatusCode(201, new { video.Id, video.Title, video.Description, video.Category }.ToJson());
+        return StatusCode(201, new { id = video.Id, title = video.Title, description = video.Description, category = video.Category }.ToJson());
     }
 }
