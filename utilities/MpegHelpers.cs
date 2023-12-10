@@ -13,14 +13,10 @@ namespace TAIBackend.Utilities
                 return 1;
             }
 
-            ;
-
             if (!RunProcess(mp4dashPath, $"{inputFilePath}-fragmented.mp4 -o {videoDirectory} -f"))
             {
                 return 1;
             }
-
-            ;
 
             var ffMpeg = new NReco.VideoConverter.FFMpegConverter();
             var thumbStream = File.OpenWrite(Path.Join(videoDirectory, "thumbnail.jpg"));
