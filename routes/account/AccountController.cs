@@ -1,13 +1,14 @@
 using System.Security.Claims;
-using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using NuGet.Protocol;
+using TAIBackend.Model;
 
 namespace TAIBackend.routes.account;
 
@@ -24,29 +25,32 @@ public class AccountController : Controller
         return Challenge(properties, FacebookDefaults.AuthenticationScheme);
     }
 
-    private class AccountDetails
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
     {
-        [JsonProperty("firstName")]
-        public string? FirstName;
-        [JsonProperty("fullName")]
-        public string? FullName;
-        [JsonProperty("profilePictureSrc")]
-        public string? ProfilePictureSrc;
-        [JsonProperty("email")]
-        public string? Email;
-    };
-    
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+        var referer = HttpContext.Request.Headers.Referer;
+        return Redirect(referer);
+    }
+
     [HttpGet("details")]
     public IActionResult Details()
     {
-        var accountDetails = new AccountDetails
+        return Content(new
         {
-            FirstName = User.FindFirst(ClaimTypes.GivenName)?.Value,
-            FullName = User.FindFirst(ClaimTypes.Name)?.Value,
-            ProfilePictureSrc = User.FindFirst("urn:facebook:picture")?.Value,
-            Email = User.FindFirst(ClaimTypes.Email)?.Value
-        };
+            firstName = User.FindFirst(ClaimTypes.GivenName)?.Value,
+            fullName = User.FindFirst(ClaimTypes.Name)?.Value,
+            profilePictureSrc = User.FindFirst("urn:facebook:picture")?.Value,
+            email = User.FindFirst(ClaimTypes.Email)?.Value
+        }.ToJson(), "application/json");
+    }
 
-        return Content(accountDetails.ToJson(), "application/json");
+    [AllowAnonymous]
+    [HttpGet("userPic/{userId}")]
+    public async Task<IActionResult> GetUserProfilePicture(YoutubeContext db, long userId)
+    {
+        var user = await db.Accounts.SingleAsync(a => a.Id == userId);
+        return Ok(new{profilePicUrl = user.ProfilePicUrl});
     }
 }

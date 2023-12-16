@@ -5,28 +5,20 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using TAIBackend.Utilities;
 using Microsoft.AspNetCore.Http.Features;
-using System.Text;
 using System.Security.Claims;
-using Newtonsoft.Json;
+using Microsoft.EntityFrameworkCore;
+using TAIBackend.Model;
+using NuGet.Protocol;
 
 namespace TAIBackend.routes.streaming;
 
 [Route("videos")]
 public class StreamingController : Controller
 {
-    private class VideoDescriptor
-    {
-        [JsonProperty("id")]
-        public int? Id;
-        [JsonProperty("title")]
-        public string? Title;
-    }
-
-
     private readonly long _fileSizeLimit;
     private readonly ILogger<StreamingController> _logger;
     private readonly string[] _permittedExtensions = { ".mp4" };
-    private readonly string? _targetFilePath;
+    private readonly string _targetFilePath;
 
     private readonly string _mp4DashPath;
     private readonly string _mp4FragmentPath;
@@ -34,23 +26,30 @@ public class StreamingController : Controller
     private static readonly FormOptions _defaultFormOptions = new FormOptions();
 
     public StreamingController(ILogger<StreamingController> logger,
-         IConfiguration config)
+        IConfiguration config)
     {
         _logger = logger;
         _fileSizeLimit = config.GetValue<long>("FileSizeLimit");
-        _targetFilePath = config.GetValue<string>("StoredFilesPath");
-        _mp4DashPath = config.GetValue<string>("MP4DashPath");
-        _mp4FragmentPath = config.GetValue<string>("MP4FragmentPath");
+        _targetFilePath = config.GetValue<string>("StoredFilesPath") ?? throw new InvalidOperationException();
+        _mp4DashPath = config.GetValue<string>("MP4DashPath") ?? throw new InvalidOperationException();
+        _mp4FragmentPath = config.GetValue<string>("MP4FragmentPath") ?? throw new InvalidOperationException();
     }
 
     [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
-    [HttpPost("upload"), HttpPut("upload")]
+    [HttpPut("upload/{id}")]
+    [RequiresUserAccount]
     [DisableFormValueModelBinding]
-    public async Task<IActionResult> UploadPhysical()
+    public async Task<IActionResult> EditPhysical(YoutubeContext db, int id)
     {
         if (Request.ContentType == null)
         {
             return BadRequest();
+        }
+
+        Video? video = await db.Videos.FindAsync(id);
+        if (video == null)
+        {
+            return NotFound("Video with specified ID does not exist");
         }
 
         if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
@@ -66,13 +65,13 @@ public class StreamingController : Controller
             MediaTypeHeaderValue.Parse(Request.ContentType),
             _defaultFormOptions.MultipartBoundaryLengthLimit);
         var reader = new MultipartReader(boundary, HttpContext.Request.Body);
-        var section = await reader.ReadNextSectionAsync();
 
         if (User.FindFirst(ClaimTypes.NameIdentifier) == null)
         {
             return StatusCode(500);
         }
-        var userDirectory = Base64UrlTextEncoder.Encode(Encoding.ASCII.GetBytes(User.FindFirst(ClaimTypes.NameIdentifier)!.Value));
+
+        var userDirectory = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
         if (_targetFilePath == null || userDirectory == null)
         {
             return StatusCode(500);
@@ -81,160 +80,313 @@ public class StreamingController : Controller
         var userPath = Path.Combine(_targetFilePath, userDirectory);
         Directory.CreateDirectory(userPath);
 
-        if (section == null || section!.ContentType != "application/json")
-        {
-            return BadRequest();
-        }
-
-        var json = await section.ReadAsStringAsync();
-        if (json == null)
-        {
-            return BadRequest();
-        }
-        VideoDescriptor? videoDescriptor = JsonConvert.DeserializeObject<VideoDescriptor>(json);
-        if (videoDescriptor == null)
-        {
-            return BadRequest();
-        }
-        if (videoDescriptor.Id == null)
-        {
-            return BadRequest("Video id is required");
-        }
-
-
-        var videoDirectory = Path.Combine(userPath, $"{videoDescriptor.Id}");
+        var videoDirectory = Path.Combine(userPath, $"{id}");
         Directory.CreateDirectory(videoDirectory);
 
         var trustedFileNameForFileStorage = "video";
-        if (HttpContext.Request.Method == "POST")
+        var section = await reader.ReadNextSectionAsync();
+        var title = "";
+        var description = "";
+        var category = "";
+        bool gotFile = false;
+
+        while (section != null)
         {
-            if (System.IO.File.Exists(Path.Combine(videoDirectory, $"{trustedFileNameForFileStorage}.json")) || System.IO.File.Exists(Path.Combine(videoDirectory, $"{trustedFileNameForFileStorage}.mp4")))
+            var hasContentDispositionHeader =
+                ContentDispositionHeaderValue.TryParse(
+                    section.ContentDisposition, out var contentDisposition);
+
+            if (!hasContentDispositionHeader)
             {
-                return Conflict("The file already exists. If you want to update the content, use HTTP PUT");
+                return BadRequest();
             }
+
+            if (MultipartRequestHelper.HasFormDataTextContentDisposition(contentDisposition!))
+            {
+                var formData = section.AsFormDataSection();
+                if (formData == null)
+                {
+                    return BadRequest();
+                }
+
+                switch (formData.Name.ToLower())
+                {
+                    case "title":
+                        title = await formData.GetValueAsync();
+                        video.Title = title;
+                        break;
+                    case "description":
+                        description = await formData.GetValueAsync();
+                        video.Description = description;
+                        break;
+                    case "category":
+                        category = await formData.GetValueAsync();
+                        break;
+                }
+
+                section = await reader.ReadNextSectionAsync();
+                continue;
+            }
+
+            if (gotFile)
+            {
+                return BadRequest("Only one video upload per request is possible");
+            }
+
+            gotFile = true;
+
+            if (!MultipartRequestHelper
+                .HasFileContentDisposition(contentDisposition!))
+            {
+                ModelState.AddModelError("File",
+                    $"The request couldn't be processed (Error 2).");
+                // Log error
+
+                return BadRequest(ModelState);
+            }
+            else
+            {
+
+                // **WARNING!**
+                // In the following example, the file is saved without
+                // scanning the file's contents. In most production
+                // scenarios, an anti-virus/anti-malware scanner API
+                // is used on the file before making the file available
+                // for download or for use by other systems. 
+                // For more information, see the topic that accompanies 
+                // this sample.
+
+                var streamedFileContent = await FileHelpers.ProcessStreamedFile(
+                    section, contentDisposition!, ModelState,
+                    _permittedExtensions, _fileSizeLimit);
+
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                using (var targetStream = System.IO.File.Create(
+                    Path.Combine(videoDirectory, $"{trustedFileNameForFileStorage}.mp4")))
+                {
+                    await targetStream.WriteAsync(streamedFileContent);
+
+                    _logger.LogInformation(
+                        "Uploaded file saved to " +
+                        "'{VideoPath}' as {TrustedFileNameForFileStorage}.mp4",
+                        videoDirectory,
+                        trustedFileNameForFileStorage);
+                }
+            }
+
+            if (MpegHelpers.GenerateDash(_mp4DashPath, _mp4FragmentPath, videoDirectory) != 0)
+            {
+                return StatusCode(500);
+            }
+
+            section = await reader.ReadNextSectionAsync();
         }
 
-        using (var targetStream = System.IO.File.Create(
-            Path.Combine(videoDirectory, $"{trustedFileNameForFileStorage}.json")))
-        {
-            await targetStream.WriteAsync(Encoding.ASCII.GetBytes(json));
-
-            _logger.LogInformation(
-                "Uploaded file config, saved to " +
-                "'{VideoPath}' as {TrustedFileNameForFileStorage}.json",
-                videoDirectory,
-                trustedFileNameForFileStorage);
-        }
-
-        section = await reader.ReadNextSectionAsync();
-        if (section == null)
+        if (!gotFile || String.IsNullOrWhiteSpace(title))
         {
             return BadRequest();
         }
-        var hasContentDispositionHeader =
-            ContentDispositionHeaderValue.TryParse(
-                section.ContentDisposition, out var contentDisposition);
 
-        if (!hasContentDispositionHeader)
+        if (String.IsNullOrWhiteSpace(category))
+        {
+            video.Category = 0;
+        }
+        else
+        {
+            video.Category = int.Parse(category);
+        }
+
+        await db.SaveChangesAsync();
+        
+        return Content(new { id = video.Id, title = video.Title, description = video.Description }.ToJson(), "application/json");
+    }
+
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    [HttpPost("upload")]
+    [RequiresUserAccount]
+    [DisableFormValueModelBinding]
+    public async Task<IActionResult> CreatePhysical(YoutubeContext db)
+    {
+        if (Request.ContentType == null)
         {
             return BadRequest();
         }
 
-        // This check assumes that there's a file
-        // present without form data. If form data
-        // is present, this method immediately fails
-        // and returns the model error.
-        if (!MultipartRequestHelper
-            .HasFileContentDisposition(contentDisposition!))
+        var id = 0;
+        if (db.Videos.Any())
+        {
+            var maxId = await db.Videos.MaxAsync(table => table.Id);
+            id = maxId + 1;
+        }
+
+        Video video = new Video
+        {
+            Id = id
+        };
+
+        if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
         {
             ModelState.AddModelError("File",
-                $"The request couldn't be processed (Error 2).");
+                $"The request couldn't be processed (Error 1).");
             // Log error
 
             return BadRequest(ModelState);
         }
-        else
+
+        var boundary = MultipartRequestHelper.GetBoundary(
+            MediaTypeHeaderValue.Parse(Request.ContentType),
+            _defaultFormOptions.MultipartBoundaryLengthLimit);
+        var reader = new MultipartReader(boundary, HttpContext.Request.Body);
+
+        if (User.FindFirst(ClaimTypes.NameIdentifier) == null)
         {
+            return StatusCode(500);
+        }
 
-            // **WARNING!**
-            // In the following example, the file is saved without
-            // scanning the file's contents. In most production
-            // scenarios, an anti-virus/anti-malware scanner API
-            // is used on the file before making the file available
-            // for download or for use by other systems. 
-            // For more information, see the topic that accompanies 
-            // this sample.
+        var userDirectory = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
+        if (_targetFilePath == null || userDirectory == null)
+        {
+            return StatusCode(500);
+        }
 
-            var streamedFileContent = await FileHelpers.ProcessStreamedFile(
-                section, contentDisposition!, ModelState,
-                _permittedExtensions, _fileSizeLimit);
+        var userPath = Path.Combine(_targetFilePath, userDirectory);
+        Directory.CreateDirectory(userPath);
 
-            if (!ModelState.IsValid)
+        var videoDirectory = Path.Combine(userPath, $"{id}");
+        Directory.CreateDirectory(videoDirectory);
+
+        var trustedFileNameForFileStorage = "video";
+
+        var section = await reader.ReadNextSectionAsync();
+        var title = "";
+        var description = "";
+        string? category = "";
+        bool gotFile = false;
+
+        while (section != null)
+        {
+            var hasContentDispositionHeader =
+                ContentDispositionHeaderValue.TryParse(
+                    section.ContentDisposition, out var contentDisposition);
+
+            if (!hasContentDispositionHeader)
             {
+                return BadRequest();
+            }
+
+            if (MultipartRequestHelper.HasFormDataTextContentDisposition(contentDisposition!))
+            {
+                var formData = section.AsFormDataSection();
+                if (formData == null)
+                {
+                    return BadRequest();
+                }
+
+                switch (formData.Name.ToLower())
+                {
+                    case "title":
+                        title = await formData.GetValueAsync();
+                        video.Title = title;
+                        break;
+                    case "description":
+                        description = await formData.GetValueAsync();
+                        video.Description = description;
+                        break;
+                    case "category":
+                        category = await formData.GetValueAsync();
+                        break;
+                }
+
+                section = await reader.ReadNextSectionAsync();
+                continue;
+            }
+
+            if (gotFile)
+            {
+                return BadRequest("Only one video upload per request is possible");
+            }
+
+            gotFile = true;
+
+            if (!MultipartRequestHelper
+                .HasFileContentDisposition(contentDisposition!))
+            {
+                ModelState.AddModelError("File",
+                    $"The request couldn't be processed (Error 2).");
+                // Log error
+
                 return BadRequest(ModelState);
             }
-
-            using (var targetStream = System.IO.File.Create(
-                Path.Combine(videoDirectory, $"{trustedFileNameForFileStorage}.mp4")))
+            else
             {
-                await targetStream.WriteAsync(streamedFileContent);
 
-                _logger.LogInformation(
-                    "Uploaded file saved to " +
-                    "'{VideoPath}' as {TrustedFileNameForFileStorage}.mp4",
-                    videoDirectory,
-                    trustedFileNameForFileStorage);
+                // **WARNING!**
+                // In the following example, the file is saved without
+                // scanning the file's contents. In most production
+                // scenarios, an anti-virus/anti-malware scanner API
+                // is used on the file before making the file available
+                // for download or for use by other systems. 
+                // For more information, see the topic that accompanies 
+                // this sample.
+
+                var streamedFileContent = await FileHelpers.ProcessStreamedFile(
+                    section, contentDisposition!, ModelState,
+                    _permittedExtensions, _fileSizeLimit);
+
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                using (var targetStream = System.IO.File.Create(
+                    Path.Combine(videoDirectory, $"{trustedFileNameForFileStorage}.mp4")))
+                {
+                    await targetStream.WriteAsync(streamedFileContent);
+
+                    _logger.LogInformation(
+                        "Uploaded file saved to " +
+                        "'{VideoPath}' as {TrustedFileNameForFileStorage}.mp4",
+                        videoDirectory,
+                        trustedFileNameForFileStorage);
+                }
             }
+
+            if (MpegHelpers.GenerateDash(_mp4DashPath, _mp4FragmentPath, videoDirectory) != 0)
+            {
+                return StatusCode(500);
+            }
+
+            section = await reader.ReadNextSectionAsync();
         }
 
-        if (MpegHelpers.GenerateDash(_mp4DashPath, _mp4FragmentPath, videoDirectory) != 0)
+        if (!gotFile || String.IsNullOrWhiteSpace(title))
         {
-            return StatusCode(500);
+            return BadRequest();
         }
 
-        return Created(nameof(StreamingController), null);
-    }
-
-    [AllowAnonymous]
-    [HttpGet("{authorID}/{videoID}/manifest.mpd")]
-    public IActionResult GetVideoManifest(string authorID, string videoID)
-    {
-        var userDirectory = Base64UrlTextEncoder.Encode(Encoding.ASCII.GetBytes(authorID));
-        if (_targetFilePath == null || userDirectory == null)
+        if (String.IsNullOrWhiteSpace(category))
         {
-            return StatusCode(500);
+            video.Category = 0;
         }
-
-        var videoDirectory = Path.Combine(_targetFilePath, userDirectory, videoID);
-
-        return PhysicalFile(Path.Combine(videoDirectory, "stream.mpd"), "application/xml");
-    }
-
-    [AllowAnonymous]
-    [HttpGet("{authorID}/{videoID}/audio/{p1}/{p2}/{segmentNumber}")]
-    public IActionResult GetAudioSegment(string authorID, string videoID, string p1, string p2, string segmentNumber)
-    {
-        var userDirectory = Base64UrlTextEncoder.Encode(Encoding.ASCII.GetBytes(authorID));
-        if (_targetFilePath == null || userDirectory == null)
+        else
         {
-            return StatusCode(500);
+            video.Category = int.Parse(category);
         }
 
-        var videoDirectory = Path.Combine(_targetFilePath, userDirectory, videoID);
-        return PhysicalFile(Path.Combine(videoDirectory, "audio", p1, p2, segmentNumber), "audio/aac");
-    }
-
-    [AllowAnonymous]
-    [HttpGet("{authorID}/{videoID}/video/{p1}/{segmentNumber}")]
-    public IActionResult GetVideoSegment(string authorID, string videoID, string p1, string segmentNumber)
-    {
-        var userDirectory = Base64UrlTextEncoder.Encode(Encoding.ASCII.GetBytes(authorID));
-        if (_targetFilePath == null || userDirectory == null)
+        var owner = await db.Accounts.FindAsync(Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value));
+        if (owner == null)
         {
-            return StatusCode(500);
+            return StatusCode(500, "Owner does not exist in DB");
         }
 
-        var videoDirectory = Path.Combine(_targetFilePath, userDirectory, videoID);
-        return PhysicalFile(Path.Combine(videoDirectory,"video", p1, segmentNumber), "video/mp4");
+        video.Owneraccountid = Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        db.Add(video);
+        await db.SaveChangesAsync();
+
+        return StatusCode(201, new { id = video.Id, title = video.Title, description = video.Description, category = video.Category }.ToJson());
     }
 }
