@@ -57,8 +57,11 @@ public partial class YoutubeContext : DbContext
             entity.HasIndex(e => e.Commenterid, "fk_3_comments");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .ValueGeneratedOnAdd()
                 .HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("created_at");
             entity.Property(e => e.Commenterid).HasColumnName("commenterid");
             entity.Property(e => e.Data)
                 .HasMaxLength(2000)

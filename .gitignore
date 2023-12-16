@@ -18,6 +18,7 @@
 mono_crash.*
 
 tools
+samples
 
 secrets.txt
 

@@ -1,7 +1,12 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NuGet.Packaging.Signing;
 using NuGet.Protocol;
+using System.Security.Claims;
 using TAIBackend.Model;
+using TAIBackend.routes.videos.models;
 
 namespace TAIBackend.routes.videos;
 
@@ -159,5 +164,64 @@ public class VideosController : Controller
                 thumbnailSrc = $"/videos/{video.Id}/thumbnail.jpg"
             })
             .ToJson() ?? "null");
+    }
+
+    [HttpGet("{videoId}/comments")]
+    public async Task<IActionResult> GetVideoComments(YoutubeContext db, long videoId,
+        [FromQuery(Name = "pageNumber")] int pageNumber, [FromQuery(Name = "pageSize")] int pageSize)
+    {
+        var comments = await db.Comments
+            .Where(c => c.Videoid == videoId)
+            .Include(c => c.Commenter)
+            .OrderByDescending(c => c.Id)
+            .Skip(pageNumber * pageSize).Take(pageSize)
+            .ToListAsync();
+
+        return Ok(new
+        {
+            data = comments.ToArray().Select(comment => new
+            {
+                id = comment.Id,
+                userId = comment.Commenterid,
+                videoId = comment.Videoid,
+                data = comment.Data,
+                createdAt = comment.CreatedAt,
+                fullName = comment.Commenter.Fullname
+            }),
+            count = db.Comments.Where(c => c.Videoid == videoId).Count()
+        });
+    }
+
+    [HttpPost("{videoId}/comments")]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    [RequiresUserAccount]
+    public async Task<IActionResult> AddVideoComment(YoutubeContext db, long videoId, [FromBody] AddVideoCommentModel body)
+    {
+        var commenterId = User.FindFirst(ClaimTypes.NameIdentifier);
+
+        if (commenterId == null)
+        {
+            return StatusCode(500);
+        }
+
+        Comment newComment = new Comment
+        {
+            Commenterid = long.Parse(commenterId.Value!),
+            Videoid = (int)videoId,
+            Data = body.data
+        };
+
+        db.Comments.Add(newComment);
+
+        await db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            id = newComment.Id,
+            data = newComment.Data,
+            createdAt = newComment.CreatedAt,
+            userId = newComment.Commenterid,
+            videoId = newComment.Videoid
+        });
     }
 }
