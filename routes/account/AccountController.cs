@@ -31,7 +31,7 @@ public class AccountController : Controller
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
         var referer = HttpContext.Request.Headers.Referer;
-        return Redirect(referer);
+        return Redirect(referer!);
     }
 
     [HttpGet("details")]
