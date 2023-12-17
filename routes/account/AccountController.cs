@@ -25,6 +25,15 @@ public class AccountController : Controller
         return Challenge(properties, FacebookDefaults.AuthenticationScheme);
     }
 
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+        var referer = HttpContext.Request.Headers.Referer;
+        return Redirect(referer!);
+    }
+
     [HttpGet("details")]
     public IActionResult Details()
     {
