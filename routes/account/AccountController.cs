@@ -39,6 +39,7 @@ public class AccountController : Controller
     {
         return Content(new
         {
+            id = long.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
             firstName = User.FindFirst(ClaimTypes.GivenName)?.Value,
             fullName = User.FindFirst(ClaimTypes.Name)?.Value,
             profilePictureSrc = User.FindFirst("urn:facebook:picture")?.Value,

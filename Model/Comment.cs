@@ -1,10 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TAIBackend.Model;
 
 public partial class Comment
 {
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
     public int Videoid { get; set; }
@@ -12,6 +14,7 @@ public partial class Comment
     public string Data { get; set; } = null!;
 
     public long Commenterid { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public virtual Account Commenter { get; set; } = null!;
 

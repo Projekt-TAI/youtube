@@ -19,6 +19,7 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy.WithOrigins("https://localhost:3000", "https://localhost:5000", "https://youtube-tai.netlify.app");
+            policy.AllowAnyHeader();
             policy.AllowCredentials();
         });
 
