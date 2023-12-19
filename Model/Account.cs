@@ -20,4 +20,6 @@ public partial class Account
     public virtual ICollection<Like> Likes { get; set; } = new List<Like>();
 
     public virtual ICollection<Video> Videos { get; set; } = new List<Video>();
+
+    public virtual ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
 }

@@ -88,13 +88,13 @@ public class VideosController : Controller
         vid.Views += 1;
         await db.SaveChangesAsync();
 
-        var videoDirectory = Path.Combine(_targetFilePath, authorID, videoID.ToString());
-        if (!Path.Exists(Path.Combine(videoDirectory, "stream.mpd")))
+        var videoDirectory = Path.Join(_targetFilePath, authorID, videoID.ToString());
+        if (!Path.Exists(Path.Join(videoDirectory, "stream.mpd")))
         {
             return NotFound("DASH manifest doesn't exists");
         }
 
-        return PhysicalFile(Path.Combine(videoDirectory, "stream.mpd"), "application/xml");
+        return PhysicalFile(Path.Join(videoDirectory, "stream.mpd"), "application/xml");
     }
 
     [HttpGet("{videoID}/thumbnail.jpg")]
@@ -127,7 +127,7 @@ public class VideosController : Controller
         var videoDirectory = Path.Combine(_targetFilePath, authorID, videoID);
         if (!Path.Exists(Path.Combine(videoDirectory, "audio", p1, p2, segmentNumber)))
         {
-            return NotFound("Audio segment doesn't exists");
+            return NotFound($"Audio segment {Path.Combine(videoDirectory, "audio", p1, p2, segmentNumber)} doesn't exists");
         }
 
         return PhysicalFile(Path.Combine(videoDirectory, "audio", p1, p2, segmentNumber), "audio/aac");
@@ -144,7 +144,7 @@ public class VideosController : Controller
         var videoDirectory = Path.Combine(_targetFilePath, authorID, videoID);
         if (!Path.Exists(Path.Combine(videoDirectory, "video", p1, segmentNumber)))
         {
-            return NotFound("Video segment doesn't exists");
+            return NotFound($"Video {Path.Combine(videoDirectory, "video", p1, segmentNumber)} segment doesn't exists");
         }
 
         return PhysicalFile(Path.Combine(videoDirectory, "video", p1, segmentNumber), "video/mp4");
