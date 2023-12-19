@@ -8,9 +8,9 @@ using TAIBackend.Model;
 namespace TAIBackend.routes.subscriptions;
 
 [Route("subscriptions")]
+[Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
 public class SubscriptionController : Controller
 {
-    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
     [HttpGet("me")]
     public async Task<IActionResult> GetSubscibedAccounts(YoutubeContext db)
     {
@@ -35,7 +35,6 @@ public class SubscriptionController : Controller
     }
 
     [HttpPost("user/{userId}/subscribe")]
-    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
     [RequiresUserAccount]
     public async Task<IActionResult> CreateSubscription(YoutubeContext db, long userId)
     {
@@ -60,7 +59,6 @@ public class SubscriptionController : Controller
     }
 
     [HttpDelete("user/{userId}/subscribe")]
-    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
     [RequiresUserAccount]
     public async Task<IActionResult> DeleteSubscription(YoutubeContext db, long userId)
     {
