@@ -241,13 +241,13 @@ public class VideosController : Controller
         var referer = HttpContext.Request.Headers.Referer;
         var videoUrl = $"{referer}watch/{videoId}";
 
-        var user = (await db.Accounts
+        var user = await db.Accounts
             .Where(a => a.Id == userId)
-            .ToListAsync())[0];
+            .SingleAsync();
 
-        var sharingUser = (await db.Accounts
+        var sharingUser = await db.Accounts
             .Where(a => a.Id == long.Parse(sharingUserId.Value))
-            .ToListAsync())[0];
+            .SingleAsync();
 
         if (user == null || sharingUser == null)
         {
