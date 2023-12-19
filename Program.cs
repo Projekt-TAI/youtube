@@ -54,7 +54,17 @@ builder.Services.AddAuthentication(options =>
 
     options.Fields.Add("picture");
     options.ClaimActions.MapCustomJson("urn:facebook:picture", claim => claim.GetProperty("picture").GetProperty("data").GetString("url"));
-    options.ClaimActions.MapCustomJson("urn:facebook:friends", claim => claim.GetProperty("friends").GetProperty("data").ToString());
+    options.ClaimActions.MapCustomJson("urn:facebook:friends", claim =>
+    {
+        try
+        {
+            return claim.GetProperty("friends").GetProperty("data").ToString();
+        }
+        catch
+        {
+            return null;
+        }
+    });
 }).AddCookie(options =>
 {
     options.Cookie.SameSite = SameSiteMode.None;
