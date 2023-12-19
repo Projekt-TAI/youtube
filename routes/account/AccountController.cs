@@ -7,8 +7,10 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using NuGet.Protocol;
 using TAIBackend.Model;
+using TAIBackend.routes.account.models;
 
 namespace TAIBackend.routes.account;
 
@@ -53,5 +55,25 @@ public class AccountController : Controller
     {
         var user = await db.Accounts.SingleAsync(a => a.Id == userId);
         return Ok(new{profilePicUrl = user.ProfilePicUrl});
+    }
+
+    [HttpGet("friends")]
+    public IActionResult GetUserFriends(YoutubeContext db)
+    {
+        var friends = User.FindFirst("urn:facebook:friends");
+
+        if (friends == null)
+        {
+            return NotFound();
+        }
+
+        var userFriends = JsonConvert.DeserializeObject<FacebookFriend[]>(friends.Value);
+
+        if (userFriends == null)
+        {
+            return Problem();
+        }
+        
+        return Ok(userFriends);
     }
 }
