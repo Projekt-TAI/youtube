@@ -20,6 +20,7 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins("https://localhost:3000", "https://localhost:5000", "https://youtube-tai.netlify.app");
             policy.AllowAnyHeader();
+            policy.AllowAnyMethod();
             policy.AllowCredentials();
         });
 
@@ -41,15 +42,19 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 }).AddFacebook(options =>
 {
-
     options.AppId = Environment.GetEnvironmentVariable("APP_ID") ?? throw new InvalidOperationException();
     options.AppSecret = Environment.GetEnvironmentVariable("APP_SECRET") ?? throw new InvalidOperationException();
     options.CorrelationCookie.Path = "/";
     options.AccessDeniedPath = "/access-denied";
     options.SaveTokens = true;
 
+    // TODO Paging
+    options.Scope.Add("user_friends");
+    options.Fields.Add("friends");
+
     options.Fields.Add("picture");
     options.ClaimActions.MapCustomJson("urn:facebook:picture", claim => claim.GetProperty("picture").GetProperty("data").GetString("url"));
+    options.ClaimActions.MapCustomJson("urn:facebook:friends", claim => claim.GetProperty("friends").GetProperty("data").ToString());
 }).AddCookie(options =>
 {
     options.Cookie.SameSite = SameSiteMode.None;

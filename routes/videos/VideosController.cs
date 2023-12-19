@@ -6,6 +6,7 @@ using NuGet.Protocol;
 using System.Security.Claims;
 using TAIBackend.Model;
 using TAIBackend.routes.videos.models;
+using TAIBackend.services;
 
 namespace TAIBackend.routes.videos;
 
@@ -222,5 +223,43 @@ public class VideosController : Controller
             userId = newComment.Commenterid,
             videoId = newComment.Videoid
         });
+    }
+
+    [HttpPost("{videoId}/share/{userId}")]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    [RequiresUserAccount]
+    public async Task<IActionResult> ShareVideo(YoutubeContext db, MailBuilder mailBuilder, MailSender mailSender, 
+        long videoId, long userId)
+    {
+        var sharingUserId = User.FindFirst(ClaimTypes.NameIdentifier);
+
+        if (sharingUserId == null)
+        {
+            return StatusCode(500);
+        }
+
+        var referer = HttpContext.Request.Headers.Referer;
+        var videoUrl = $"{referer}watch/{videoId}";
+
+        var user = (await db.Accounts
+            .Where(a => a.Id == userId)
+            .ToListAsync())[0];
+
+        var sharingUser = (await db.Accounts
+            .Where(a => a.Id == long.Parse(sharingUserId.Value))
+            .ToListAsync())[0];
+
+        if (user == null || sharingUser == null)
+        {
+            return NotFound();
+        }
+
+        var emailSubject = "A user shared a video with you";
+        var emailBody = $"User {sharingUser.Fullname} shared a <a href=\"{videoUrl}\">Video</a>";
+        var recipients = new List<string> { user.Email };
+
+        await mailSender.SendMail(mailBuilder.BuildMail(recipients, emailSubject, emailBody));
+
+        return Ok();
     }
 }
