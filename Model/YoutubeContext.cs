@@ -20,6 +20,8 @@ public partial class YoutubeContext : DbContext
     public virtual DbSet<Like> Likes { get; set; }
 
     public virtual DbSet<Video> Videos { get; set; }
+    
+    public virtual DbSet<Subscription> Subscriptions { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseInMemoryDatabase("youtube");
@@ -132,6 +134,26 @@ public partial class YoutubeContext : DbContext
                 .HasForeignKey(d => d.Owneraccountid)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_1_videos");
+        });
+        
+        modelBuilder.Entity<Subscription>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_1_subscriptions");
+
+            entity.ToTable("subscriptions");
+
+            entity.HasIndex(e => e.Owneraccountid, "fk_1_subscriptions");
+
+            entity.Property(e => e.Id)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("id");
+            
+            entity.Property(e => e.Owneraccountid).HasColumnName("owneraccountid");
+
+            entity.HasOne(d => d.Owneraccount).WithMany(p => p.Subscriptions)
+                .HasForeignKey(d => d.Owneraccountid)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_1_subscriptions");
         });
 
         OnModelCreatingPartial(modelBuilder);
