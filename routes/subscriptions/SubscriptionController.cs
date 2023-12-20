@@ -17,14 +17,13 @@ public class SubscriptionController : Controller
         try
         {
             var ownerAccountId = Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var subs = await db.Subscriptions.Where(s => s.Owneraccountid == ownerAccountId).ToListAsync();
-            return Ok(new
-            {
-                data = subs.ToArray().Select(s => new
+            var subs = await db.Subscriptions.Where(s => s.Owneraccountid == ownerAccountId).Include(s=>s.Subscribedaccount).ToListAsync();
+            return Ok(
+                subs.ToArray().Select(s => new
                 {
-                    userId = s.Owneraccountid, userFullName = s.Owneraccount.Fullname
+                    userId = s.Owneraccountid, userFullName = s.Subscribedaccount.Fullname
                 })
-            });
+            );
         }
         catch (Exception e)
         {
@@ -56,7 +55,7 @@ public class SubscriptionController : Controller
 
             await db.Subscriptions.AddAsync(sub);
             await db.SaveChangesAsync();
-            return StatusCode(201, new { accountId = sub.Subscribedaccountid });
+            return StatusCode(201, new { userId = sub.Subscribedaccountid, userFullName = sub.Subscribedaccount.Fullname });
         }
         catch (Exception e)
         {
@@ -83,7 +82,7 @@ public class SubscriptionController : Controller
             db.Subscriptions.Attach(s);
             db.Subscriptions.Remove(s);
             await db.SaveChangesAsync();
-            return StatusCode(200, new { accountId = sub.Subscribedaccountid });
+            return StatusCode(200, new { userId = sub.Subscribedaccountid });
         }
         catch (Exception e)
         {
