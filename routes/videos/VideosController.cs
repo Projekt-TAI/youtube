@@ -40,13 +40,9 @@ public class VideosController : Controller
     }
 
     [HttpGet("{videoID}/manifest.mpd")]
-    public async Task<IActionResult> GetVideoManifestFromID(YoutubeContext db, int id)
+    public async Task<IActionResult> GetVideoManifestFromID(YoutubeContext db, int videoID)
     {
-        Video? video = await db.Videos.FindAsync(id);
-        if (video == null)
-        {
-            return NotFound("Video with specified id does not exist");
-        }
+        Video video = await db.Videos.SingleAsync(v => v.Id==videoID);
 
         return await GetVideoManifest(db, video.Owneraccountid.ToString(), video.Id);
     }
@@ -55,11 +51,7 @@ public class VideosController : Controller
     public async Task<IActionResult> GetAudioSegmentFromID(YoutubeContext db, int videoID, string p1, string p2,
         string segmentNumber)
     {
-        Video? video = await db.Videos.FindAsync(videoID);
-        if (video == null)
-        {
-            return NotFound("Video with specified id does not exist");
-        }
+        Video video = await db.Videos.SingleAsync(v => v.Id==videoID);
 
         return GetAudioSegment(video.Owneraccountid.ToString(), video.Id.ToString(), p1, p2, segmentNumber);
     }
@@ -68,11 +60,7 @@ public class VideosController : Controller
     public async Task<IActionResult> GetVideoSegmentFromID(YoutubeContext db, int videoID, string p1,
         string segmentNumber)
     {
-        Video? video = await db.Videos.FindAsync(videoID);
-        if (video == null)
-        {
-            return NotFound("Video with specified id does not exist");
-        }
+        Video video = await db.Videos.SingleAsync(v => v.Id==videoID);
 
         return GetVideoSegment(video.Owneraccountid.ToString(), video.Id.ToString(), p1, segmentNumber);
     }
@@ -188,7 +176,7 @@ public class VideosController : Controller
                 createdAt = comment.CreatedAt,
                 fullName = comment.Commenter.Fullname
             }),
-            count = db.Comments.Where(c => c.Videoid == videoId).Count()
+            count = db.Comments.Count(c => c.Videoid == videoId)
         });
     }
 
@@ -223,6 +211,32 @@ public class VideosController : Controller
             userId = newComment.Commenterid,
             videoId = newComment.Videoid
         });
+    }
+    
+    [HttpGet("{videoId}/details")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetVideoDetails(YoutubeContext db, int videoId)
+    {
+        try
+        {
+            var v =await db.Videos.Include(v => v.Likes).Include(v => v.Owneraccount).SingleAsync(v => v.Id == videoId);
+            var likes = v.Likes.Count;
+            
+            return Ok(new
+            {
+                id = v.Id,
+                createdAt = v.CreatedAt,
+                userId = v.Owneraccountid,
+                
+                views = v.Views,
+                likes = likes
+            });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     [HttpPost("{videoId}/share/{userId}")]
