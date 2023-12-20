@@ -288,78 +288,90 @@ public class VideosController : Controller
  }
  */
 
- [HttpPost("{videoId}/like")]
- [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
- [RequiresUserAccount]
- public async Task<IActionResult> LikeVideo(YoutubeContext db, [FromBody] AddVideoCommentModel body)
- {
-     Video? video = await db.Videos.FindAsync((int)body.videoId);
-     if (video == null)
-     {
-         return NotFound("404");
-     }
+     [HttpPost("{videoId}/like")]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    [RequiresUserAccount]
+    public async Task<IActionResult> LikeVideo(YoutubeContext db, [FromBody] AddVideoCommentModel body)
+    {
+        Video? video = await db.Videos.FindAsync((int)body.videoId);
+        if (video == null)
+        {
+            return NotFound("404");
+        }
 
-     var userId = User.FindFirst(ClaimTypes.NameIdentifier);
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier);
 
+        Like? likePrevID = await db.Likes
+        .OrderByDescending(l => l.Id)
+        .FirstOrDefaultAsync();
 
-     bool likeState;
+        int likeID;
 
-     if (body.value == -1) likeState = true;
-     else likeState = false;
+        if (likePrevID == null)
+        {
+            likeID = 0;
+        }
+        else likeID=likePrevID.Id + 1;
 
-     if (!db.Likes.Any(l => l.Video == body.videoId && l.Account == long.Parse(userId.Value!)))
-     {
-         Like like = new Like
-         {
-             Video = (int)body.videoId,
-             Account = long.Parse(userId.Value!),
-             Unlike = likeState
-         };
-         db.Likes.Add(like);
-         await db.SaveChangesAsync();
+        bool likeState;
 
-         return Ok(new
-         {
-             id = like.Id,
-             videoId = like.Video,
-             account = like.Account,
-             unlike = like.Unlike,
+        if (body.value == -1) likeState = true;
+        else likeState = false;
 
-         });
-     }
-     else
-     {
-         var existingLike = await db.Likes.FirstOrDefaultAsync(l => l.Video == body.videoId && l.Account == long.Parse(userId.Value!));
+        if (!db.Likes.Any(l => l.Video == body.videoId && l.Account == long.Parse(userId.Value!)))
+        {
+            Like like = new Like
+            {
+                Id = likeID,
+                Video = (int)body.videoId,
+                Account = long.Parse(userId.Value!),
+                Unlike = likeState
+            };
+            db.Likes.Add(like);
+            await db.SaveChangesAsync();
 
-         existingLike.Unlike = likeState;
+            return Ok(new
+            {
+                id = like.Id,
+                videoId = like.Video,
+                account = like.Account,
+                unlike = like.Unlike,
 
-         await db.SaveChangesAsync();
+            });
+        }
+        else
+        {
+            var existingLike = await db.Likes.FirstOrDefaultAsync(l => l.Video == body.videoId && l.Account == long.Parse(userId.Value!));
 
-         return Ok(new
-         {
-             id = existingLike.Id,
-             videoId = existingLike.Video,
-             account = existingLike.Account,
-             unlike = existingLike.Unlike,
+            existingLike.Unlike = likeState;
 
-         });
+            await db.SaveChangesAsync();
 
-     }
+            return Ok(new
+            {
+                id = existingLike.Id,
+                videoId = existingLike.Video,
+                account = existingLike.Account,
+                unlike = existingLike.Unlike,
 
- }
+            });
 
- [HttpDelete("{videoId}/like")]
- [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
- [RequiresUserAccount]
- public async Task<IActionResult> DeleteLike(YoutubeContext db, int videoId)
- {
-     var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        }
 
-     var like = await db.Likes.FirstOrDefaultAsync(l => l.Video == videoId && l.Account == long.Parse(userId));
+    }
 
-     db.Likes.Remove(like);
-     await db.SaveChangesAsync();
+    [HttpDelete("{videoId}/like")]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    [RequiresUserAccount]
+    public async Task<IActionResult> DeleteLike(YoutubeContext db, int videoId)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-     return Ok(new { message = "Like/Dislike has been removed" });
- }
+        var like = await db.Likes.FirstOrDefaultAsync(l => l.Video == videoId && l.Account == long.Parse(userId));
+
+        db.Likes.Remove(like);
+        await db.SaveChangesAsync();
+
+        return Ok(new { message = "Like/Dislike has been removed" });
+    }
 }
