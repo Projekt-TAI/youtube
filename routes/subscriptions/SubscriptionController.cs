@@ -22,9 +22,8 @@ public class SubscriptionController : Controller
             {
                 data = subs.ToArray().Select(s => new
                 {
-                    id = s.Id, subscribedId = s.Owneraccountid
-                }),
-                count = subs.Count
+                    userId = s.Owneraccountid, userFullName = s.Owneraccount.Fullname
+                })
             });
         }
         catch (Exception e)
@@ -41,6 +40,14 @@ public class SubscriptionController : Controller
         try
         {
             await db.Accounts.SingleAsync(a => a.Id == userId);
+            var s = await db.Subscriptions.Where(s =>
+                s.Owneraccountid == Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value) &&
+                s.Subscribedaccountid == userId).ToListAsync();
+            
+            if (s.Count > 0)
+            {
+                return BadRequest($"User has already subscribed to user {userId}");
+            }
             var sub = new Subscription
             {
                 Owneraccountid = Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
@@ -64,7 +71,6 @@ public class SubscriptionController : Controller
     {
         try
         {
-            await db.Accounts.SingleAsync(a => a.Id == userId);
             var sub = new Subscription
             {
                 Owneraccountid = Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
