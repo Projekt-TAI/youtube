@@ -21,7 +21,7 @@ public class SubscriptionController : Controller
             return Ok(
                 subs.ToArray().Select(s => new
                 {
-                    userId = s.Owneraccountid, userFullName = s.Subscribedaccount.Fullname
+                    userId = s.Subscribedaccountid, userFullName = s.Subscribedaccount.Fullname
                 })
             );
         }
