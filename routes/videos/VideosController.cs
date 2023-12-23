@@ -21,11 +21,16 @@ public class VideosController : Controller
     }
 
     [HttpGet(""), HttpGet("/")]
-    public async Task<IActionResult> GetVideos(YoutubeContext db, [FromQuery(Name = "pageNumber")] int pageNumber,
-        [FromQuery(Name = "pageSize")] int pageSize)
+    public IActionResult GetVideos(YoutubeContext db, [FromQuery(Name = "pageNumber")] int pageNumber,
+        [FromQuery(Name = "pageSize")] int pageSize, [FromQuery(Name = "searchText")] string? searchText,
+        [FromQuery(Name = "categoryId")] int? categoryId)
     {
-        var vids = await db.Videos.OrderByDescending(v => v.Id).Skip(pageNumber * pageSize).Take(pageSize)
-            .ToListAsync();
+        Func<Video, bool> predicate = delegate (Video v) {
+            return (searchText != null ? v.Title.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0 : true) && (categoryId != null ? v.Category == categoryId : true);
+        };
+
+        var vids = db.Videos.Where(predicate).OrderByDescending(v => v.Id).Skip(pageNumber * pageSize).Take(pageSize)
+            .ToList();
 
         return Ok(new
         {
@@ -35,7 +40,7 @@ public class VideosController : Controller
                 category = video.Category, createdAt = video.CreatedAt.ToUniversalTime(), views = video.Views,
                 thumbnailSrc = $"/videos/{video.Id}/thumbnail.jpg"
             }),
-            count = db.Videos.Count()
+            count = db.Videos.Where(predicate).Count()
         });
     }
 
@@ -219,7 +224,7 @@ public class VideosController : Controller
     {
         try
         {
-            var v =await db.Videos.Include(v => v.Likes).Include(v => v.Owneraccount).SingleAsync(v => v.Id == videoId);
+            var v = await db.Videos.Include(v => v.Likes).Include(v => v.Owneraccount).SingleAsync(v => v.Id == videoId);
             var likes = v.Likes.Count;
             
             return Ok(new
