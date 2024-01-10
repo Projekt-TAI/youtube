@@ -39,6 +39,52 @@ public class VideosController : Controller
         });
     }
 
+    [HttpGet("subscriptions")]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    [RequiresUserAccount]
+    public async Task<IActionResult> GetSubscriptionVideos(YoutubeContext db, [FromQuery(Name = "pageNumber")] int pageNumber,
+        [FromQuery(Name = "pageSize")] int pageSize)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier);
+
+        if (userId == null)
+        {
+            return StatusCode(500);
+        }
+
+        var userIdParsed = long.Parse(userId.Value);
+
+        var query = db.Subscriptions
+            .Include(s => s.Subscribedaccount)
+            .ThenInclude(sa => sa.Videos)
+            .Where(s => s.Owneraccountid == userIdParsed)
+            .SelectMany(s => s.Subscribedaccount.Videos)
+            .OrderByDescending(v => v.Id);
+
+        var subscriptionVideos = await query
+            .Skip(pageNumber * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var count = query.Count();
+
+        return Ok(new
+        {
+            data = subscriptionVideos.ToArray().Select(video => new
+            {
+                id = video.Id,
+                authorID = video.Owneraccountid,
+                title = video.Title,
+                description = video.Description,
+                category = video.Category,
+                createdAt = video.CreatedAt.ToUniversalTime(),
+                views = video.Views,
+                thumbnailSrc = $"/videos/{video.Id}/thumbnail.jpg"
+            }),
+            count
+        });
+    }
+
     [HttpGet("{videoID}/manifest.mpd")]
     public async Task<IActionResult> GetVideoManifestFromID(YoutubeContext db, int videoID)
     {
