@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using NuGet.Protocol;
 using TAIBackend.Model;
 using TAIBackend.routes.account.models;
@@ -75,5 +74,21 @@ public class AccountController : Controller
         }
         
         return Ok(userFriends);
+    }
+
+    [HttpGet("profile/details/{userId}")]
+    public async Task<IActionResult> ProfileDetails(YoutubeContext db, long userId)
+    {
+        var query = db.Accounts
+            .Where(a => a.Id == userId)
+            .Select(a => new
+            {
+                userFullName = a.Fullname,
+                subscriptions = a.Subscriptions.Count
+            });
+
+        var result = await query.SingleAsync();
+
+        return Ok(result);
     }
 }
