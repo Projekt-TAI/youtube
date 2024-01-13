@@ -287,56 +287,38 @@ public class VideosController : Controller
             var likeCount = likes.FindAll(l => l.Unlike == false).Count();
             var dislikeCount = likes.FindAll(l => l.Unlike == true).Count();
 
-            if (watcherId == null)
+            Like? like = null;
+            if (watcherId != null)
             {
-                return Ok(new
-                {
-                    id = v.Id,
-                    createdAt = v.CreatedAt,
-                    userId = v.Owneraccountid,
-                    userFullName = v.Owneraccount.Fullname,
-
-                    views = v.Views,
-                    likes = likeCount,
-                    dislikes = dislikeCount,
-                    subscriptions = v.Owneraccount.Subscriptions.Count(),
-
-                    title = v.Title,
-                    description = v.Description,
-                    category = v.Category
-                });
+                like = await db.Likes.Where(l => l.Video == v.Id).Where(l => l.Account == long.Parse(watcherId.Value)).FirstOrDefaultAsync();
             }
-            else
+            var isLiked = false;
+            var isDisliked = false;
+
+            if (like != null)
             {
-                var like = await db.Likes.Where(l => l.Video == v.Id).Where(l => l.Account == long.Parse(watcherId.Value)).ToArrayAsync();
-                var isLiked = false;
-                var isDisliked = false;
-
-                if (like.Length == 1)
-                {
-                    isLiked = !like[0].Unlike;
-                    isDisliked = like[0].Unlike;
-                }
-                return Ok(new
-                {
-                    id = v.Id,
-                    createdAt = v.CreatedAt,
-                    userId = v.Owneraccountid,
-                    userFullName = v.Owneraccount.Fullname,
-
-                    views = v.Views,
-                    likes = likeCount,
-                    dislikes = dislikeCount,
-                    subscriptions = v.Owneraccount.Subscriptions.Count(),
-
-                    title = v.Title,
-                    description = v.Description,
-                    category = v.Category,
-
-                    isLiked = isLiked,
-                    isDisliked = isDisliked
-                });
+                isLiked = !like.Unlike;
+                isDisliked = like.Unlike;
             }
+            return Ok(new
+            {
+                id = v.Id,
+                createdAt = v.CreatedAt,
+                userId = v.Owneraccountid,
+                userFullName = v.Owneraccount.Fullname,
+
+                views = v.Views,
+                likes = likeCount,
+                dislikes = dislikeCount,
+                subscriptions = v.Owneraccount.Subscriptions.Count(),
+
+                title = v.Title,
+                description = v.Description,
+                category = v.Category,
+
+                isLiked = isLiked,
+                isDisliked = isDisliked
+            });
         }
         catch (Exception e)
         {
