@@ -9,7 +9,8 @@ public static class VideoMapper
         return new
         {
             id = video.Id,
-            authorID = video.Owneraccountid,
+            userId = video.Owneraccountid,
+            userFullName = video.Owneraccount.Fullname,
             title = video.Title,
             description = video.Description,
             category = video.Category,

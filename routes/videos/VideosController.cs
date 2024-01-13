@@ -30,7 +30,12 @@ public class VideosController : Controller
             return (searchText != null ? v.Title.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0 : true) && (categoryId != null ? v.Category == categoryId : true);
         };
 
-        var vids = db.Videos.Where(predicate).OrderByDescending(v => v.Id).Skip(pageNumber * pageSize).Take(pageSize)
+        var vids = db.Videos
+            .Include(v => v.Owneraccount)
+            .Where(predicate)
+            .OrderByDescending(v => v.Id)
+            .Skip(pageNumber * pageSize)
+            .Take(pageSize)
             .ToList();
 
         return Ok(new
@@ -45,6 +50,7 @@ public class VideosController : Controller
         [FromQuery(Name = "pageSize")] int pageSize, long userId)
     {
         var query = db.Videos
+            .Include(v => v.Owneraccount)
             .Where(v => v.Owneraccountid == userId)
             .OrderByDescending(v => v.Id);
 
@@ -80,6 +86,7 @@ public class VideosController : Controller
         var query = db.Subscriptions
             .Include(s => s.Subscribedaccount)
             .ThenInclude(sa => sa.Videos)
+            .ThenInclude(v => v.Owneraccount)
             .Where(s => s.Owneraccountid == userIdParsed)
             .SelectMany(s => s.Subscribedaccount.Videos)
             .OrderByDescending(v => v.Id);
