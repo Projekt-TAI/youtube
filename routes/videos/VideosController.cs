@@ -7,6 +7,7 @@ using System.Security.Claims;
 using TAIBackend.Model;
 using TAIBackend.routes.videos.models;
 using TAIBackend.services;
+using TAIBackend.Utilities;
 
 namespace TAIBackend.routes.videos;
 
@@ -30,23 +31,41 @@ public class VideosController : Controller
             return (searchText != null ? v.Title.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0 : true) && (categoryId != null ? v.Category == categoryId : true);
         };
 
-        var vids = db.Videos.Where(predicate).OrderByDescending(v => v.Id).Skip(pageNumber * pageSize).Take(pageSize)
+        var vids = db.Videos
+            .Include(v => v.Owneraccount)
+            .Where(predicate)
+            .OrderByDescending(v => v.Id)
+            .Skip(pageNumber * pageSize)
+            .Take(pageSize)
             .ToList();
 
         return Ok(new
         {
-            data = vids.ToArray().Select(video => new
-            {
-                id = video.Id,
-                authorID = video.Owneraccountid,
-                title = video.Title,
-                description = video.Description,
-                category = video.Category,
-                createdAt = video.CreatedAt.ToUniversalTime(),
-                views = video.Views,
-                thumbnailSrc = $"/videos/{video.Id}/thumbnail.jpg"
-            }),
+            data = vids.ToArray().Select(video => VideoMapper.Map(video)),
             count = db.Videos.Where(predicate).Count()
+        });
+    }
+
+    [HttpGet("user/{userId}")]
+    public async Task<IActionResult> GetUserVideos(YoutubeContext db, [FromQuery(Name = "pageNumber")] int pageNumber,
+        [FromQuery(Name = "pageSize")] int pageSize, long userId)
+    {
+        var query = db.Videos
+            .Include(v => v.Owneraccount)
+            .Where(v => v.Owneraccountid == userId)
+            .OrderByDescending(v => v.Id);
+
+        var subscriptionVideos = await query
+            .Skip(pageNumber * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var count = query.Count();
+
+        return Ok(new
+        {
+            data = subscriptionVideos.ToArray().Select(video => VideoMapper.Map(video)),
+            count
         });
     }
 
@@ -68,6 +87,7 @@ public class VideosController : Controller
         var query = db.Subscriptions
             .Include(s => s.Subscribedaccount)
             .ThenInclude(sa => sa.Videos)
+            .ThenInclude(v => v.Owneraccount)
             .Where(s => s.Owneraccountid == userIdParsed)
             .SelectMany(s => s.Subscribedaccount.Videos)
             .OrderByDescending(v => v.Id);
@@ -81,17 +101,7 @@ public class VideosController : Controller
 
         return Ok(new
         {
-            data = subscriptionVideos.ToArray().Select(video => new
-            {
-                id = video.Id,
-                authorID = video.Owneraccountid,
-                title = video.Title,
-                description = video.Description,
-                category = video.Category,
-                createdAt = video.CreatedAt.ToUniversalTime(),
-                views = video.Views,
-                thumbnailSrc = $"/videos/{video.Id}/thumbnail.jpg"
-            }),
+            data = subscriptionVideos.ToArray().Select(video => VideoMapper.Map(video)),
             count
         });
     }
@@ -310,7 +320,7 @@ public class VideosController : Controller
                 views = v.Views,
                 likes = likeCount,
                 dislikes = dislikeCount,
-                subscriptions = v.Owneraccount.Subscriptions.Count(),
+                subscriptions = v.Owneraccount.Subscribers.Count(),
 
                 title = v.Title,
                 description = v.Description,
