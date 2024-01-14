@@ -26,7 +26,8 @@ public class VideosController : Controller
         [FromQuery(Name = "pageSize")] int pageSize, [FromQuery(Name = "searchText")] string? searchText,
         [FromQuery(Name = "categoryId")] int? categoryId)
     {
-        Func<Video, bool> predicate = delegate (Video v) {
+        Func<Video, bool> predicate = delegate (Video v)
+        {
             return (searchText != null ? v.Title.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0 : true) && (categoryId != null ? v.Category == categoryId : true);
         };
 
@@ -108,7 +109,7 @@ public class VideosController : Controller
     [HttpGet("{videoID}/manifest.mpd")]
     public async Task<IActionResult> GetVideoManifestFromID(YoutubeContext db, int videoID)
     {
-        Video video = await db.Videos.SingleAsync(v => v.Id==videoID);
+        Video video = await db.Videos.SingleAsync(v => v.Id == videoID);
 
         return await GetVideoManifest(db, video.Owneraccountid.ToString(), video.Id);
     }
@@ -117,7 +118,7 @@ public class VideosController : Controller
     public async Task<IActionResult> GetAudioSegmentFromID(YoutubeContext db, int videoID, string p1, string p2,
         string segmentNumber)
     {
-        Video video = await db.Videos.SingleAsync(v => v.Id==videoID);
+        Video video = await db.Videos.SingleAsync(v => v.Id == videoID);
 
         return GetAudioSegment(video.Owneraccountid.ToString(), video.Id.ToString(), p1, p2, segmentNumber);
     }
@@ -126,7 +127,7 @@ public class VideosController : Controller
     public async Task<IActionResult> GetVideoSegmentFromID(YoutubeContext db, int videoID, string p1,
         string segmentNumber)
     {
-        Video video = await db.Videos.SingleAsync(v => v.Id==videoID);
+        Video video = await db.Videos.SingleAsync(v => v.Id == videoID);
 
         return GetVideoSegment(video.Owneraccountid.ToString(), video.Id.ToString(), p1, segmentNumber);
     }
@@ -214,7 +215,11 @@ public class VideosController : Controller
         return Ok(accs?.ToArray()
             .Select(video => new
             {
-                video.Id, video.Title, video.Description, video.Category, views = video.Views,
+                video.Id,
+                video.Title,
+                video.Description,
+                video.Category,
+                views = video.Views,
                 thumbnailSrc = $"/videos/{video.Id}/thumbnail.jpg"
             })
             .ToJson() ?? "null");
@@ -278,24 +283,51 @@ public class VideosController : Controller
             videoId = newComment.Videoid
         });
     }
-    
+
     [HttpGet("{videoId}/details")]
     [AllowAnonymous]
     public async Task<IActionResult> GetVideoDetails(YoutubeContext db, int videoId)
     {
         try
         {
+            var watcherId = User.FindFirst(ClaimTypes.NameIdentifier);
+
             var v = await db.Videos.Include(v => v.Likes).Include(v => v.Owneraccount).SingleAsync(v => v.Id == videoId);
-            var likes = v.Likes.Count;
-            
+            var likes = v.Likes.ToList();
+            var likeCount = likes.FindAll(l => l.Unlike == false).Count();
+            var dislikeCount = likes.FindAll(l => l.Unlike == true).Count();
+
+            Like? like = null;
+            if (watcherId != null)
+            {
+                like = await db.Likes.Where(l => l.Video == v.Id).Where(l => l.Account == long.Parse(watcherId.Value)).FirstOrDefaultAsync();
+            }
+            var isLiked = false;
+            var isDisliked = false;
+
+            if (like != null)
+            {
+                isLiked = !like.Unlike;
+                isDisliked = like.Unlike;
+            }
             return Ok(new
             {
                 id = v.Id,
                 createdAt = v.CreatedAt,
                 userId = v.Owneraccountid,
-                
+                userFullName = v.Owneraccount.Fullname,
+
                 views = v.Views,
-                likes = likes
+                likes = likeCount,
+                dislikes = dislikeCount,
+                subscriptions = v.Owneraccount.Subscriptions.Count(),
+
+                title = v.Title,
+                description = v.Description,
+                category = v.Category,
+
+                isLiked = isLiked,
+                isDisliked = isDisliked
             });
         }
         catch (Exception e)
@@ -308,7 +340,7 @@ public class VideosController : Controller
     [HttpPost("{videoId}/share/{userId}")]
     [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
     [RequiresUserAccount]
-    public async Task<IActionResult> ShareVideo(YoutubeContext db, MailBuilder mailBuilder, MailSender mailSender, 
+    public async Task<IActionResult> ShareVideo(YoutubeContext db, MailBuilder mailBuilder, MailSender mailSender,
         long videoId, long userId)
     {
         var sharingUserId = User.FindFirst(ClaimTypes.NameIdentifier);
