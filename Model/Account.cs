@@ -22,4 +22,5 @@ public partial class Account
     public virtual ICollection<Video> Videos { get; set; } = new List<Video>();
 
     public virtual ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
+    public virtual ICollection<Subscription> Subscribers { get; set; } = new List<Subscription>();
 }

@@ -144,6 +144,8 @@ public partial class YoutubeContext : DbContext
 
             entity.HasIndex(e => e.Owneraccountid, "fk_1_subscriptions");
 
+            entity.HasIndex(e => e.Subscribedaccountid, "fk_2_subscriptions");
+
             entity.Property(e => e.Id)
                 .ValueGeneratedOnAdd()
                 .HasColumnName("id");
@@ -154,6 +156,11 @@ public partial class YoutubeContext : DbContext
                 .HasForeignKey(d => d.Owneraccountid)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_1_subscriptions");
+
+            entity.HasOne(d => d.Subscribedaccount).WithMany(p => p.Subscribers)
+                .HasForeignKey(d => d.Subscribedaccountid)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_2_subscriptions");
         });
 
         OnModelCreatingPartial(modelBuilder);

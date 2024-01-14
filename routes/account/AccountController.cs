@@ -84,7 +84,7 @@ public class AccountController : Controller
             .Select(a => new
             {
                 userFullName = a.Fullname,
-                subscriptions = a.Subscriptions.Count
+                subscriptions = a.Subscribers.Count
             });
 
         var result = await query.SingleAsync();
