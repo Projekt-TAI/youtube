@@ -320,7 +320,7 @@ public class VideosController : Controller
                 views = v.Views,
                 likes = likeCount,
                 dislikes = dislikeCount,
-                subscriptions = v.Owneraccount.Subscriptions.Count(),
+                subscriptions = v.Owneraccount.Subscribers.Count(),
 
                 title = v.Title,
                 description = v.Description,
