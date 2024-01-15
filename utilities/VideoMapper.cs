@@ -11,6 +11,7 @@ public static class VideoMapper
             id = video.Id,
             userId = video.Owneraccountid,
             userFullName = video.Owneraccount.Fullname,
+            profilePictureSrc = video.Owneraccount.ProfilePicUrl,
             title = video.Title,
             description = video.Description,
             category = video.Category,

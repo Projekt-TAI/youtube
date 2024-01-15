@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using NuGet.Protocol;
 using System.Security.Claims;
 using TAIBackend.Model;
@@ -245,7 +246,8 @@ public class VideosController : Controller
                 videoId = comment.Videoid,
                 data = comment.Data,
                 createdAt = comment.CreatedAt,
-                fullName = comment.Commenter.Fullname
+                fullName = comment.Commenter.Fullname,
+                profilePictureSrc = comment.Commenter.ProfilePicUrl
             }),
             count = db.Comments.Count(c => c.Videoid == videoId)
         });
@@ -280,7 +282,8 @@ public class VideosController : Controller
             data = newComment.Data,
             createdAt = newComment.CreatedAt,
             userId = newComment.Commenterid,
-            videoId = newComment.Videoid
+            profilePictureSrc = newComment.Commenter.ProfilePicUrl,
+            videoId = newComment.Videoid,
         });
     }
 
@@ -316,6 +319,7 @@ public class VideosController : Controller
                 createdAt = v.CreatedAt,
                 userId = v.Owneraccountid,
                 userFullName = v.Owneraccount.Fullname,
+                profilePictureSrc = v.Owneraccount.ProfilePicUrl,
 
                 views = v.Views,
                 likes = likeCount,
