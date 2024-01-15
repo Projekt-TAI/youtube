@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Newtonsoft.Json;
 using NuGet.Protocol;
 using TAIBackend.Model;
@@ -76,6 +77,7 @@ public class AccountController : Controller
         return Ok(userFriends);
     }
 
+    [AllowAnonymous]
     [HttpGet("profile/details/{userId}")]
     public async Task<IActionResult> ProfileDetails(YoutubeContext db, long userId)
     {
@@ -84,6 +86,7 @@ public class AccountController : Controller
             .Select(a => new
             {
                 userFullName = a.Fullname,
+                profilePictureSrc = a.ProfilePicUrl,
                 subscriptions = a.Subscribers.Count
             });
 

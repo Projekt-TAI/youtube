@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using TAIBackend.Model;
 
 namespace TAIBackend.routes.subscriptions;
@@ -21,7 +22,9 @@ public class SubscriptionController : Controller
             return Ok(
                 subs.ToArray().Select(s => new
                 {
-                    userId = s.Subscribedaccountid, userFullName = s.Subscribedaccount.Fullname
+                    userId = s.Subscribedaccountid, 
+                    userFullName = s.Subscribedaccount.Fullname,
+                    profilePictureSrc = s.Subscribedaccount.ProfilePicUrl,
                 })
             );
         }
@@ -55,7 +58,11 @@ public class SubscriptionController : Controller
 
             await db.Subscriptions.AddAsync(sub);
             await db.SaveChangesAsync();
-            return StatusCode(201, new { userId = sub.Subscribedaccountid, userFullName = sub.Subscribedaccount.Fullname });
+            return StatusCode(201, new { 
+                userId = sub.Subscribedaccountid, 
+                userFullName = sub.Subscribedaccount.Fullname,
+                profilePictureSrc = sub.Subscribedaccount.ProfilePicUrl,
+            });
         }
         catch (Exception e)
         {
