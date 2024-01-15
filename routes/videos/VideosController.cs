@@ -264,20 +264,17 @@ public class VideosController : Controller
     }
 
 
-     [HttpPost("{videoId}/like")]
+    [HttpPost("{videoId}/like")]
     [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
     [RequiresUserAccount]
     public async Task<IActionResult> LikeVideo(YoutubeContext db, [FromBody] AddVideoLikeModel body)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier);
-        bool likeState;
-
-        if (body.value == -1) likeState = true;
-        else likeState = false;
-        var existingLike = await db.Likes.FirstOrDefaultAsync(l => l.Video == body.videoId && l.Account == long.Parse(userId.Value!));
-        if (existingLike==null)
+        bool likeState = body.value == -1;
+        Like like = await db.Likes.FirstOrDefaultAsync(l => l.Video == body.videoId && l.Account == long.Parse(userId.Value!));
+        if (like==null)
         {
-            Like like = new Like
+            like = new Like
             {
                 Video = (int)body.videoId,
                 Account = long.Parse(userId.Value!),
@@ -285,31 +282,19 @@ public class VideosController : Controller
             };
             db.Likes.Add(like);
             await db.SaveChangesAsync();
-
-            return Ok(new
-            {
-                id = like.Id,
-                videoId = like.Video,
-                account = like.Account,
-                unlike = like.Unlike
-
-            });
         }
         else
         {
-            existingLike.Unlike = likeState;
-            await db.SaveChangesAsync();
-            return Ok(new
-            {
-                id = existingLike.Id,
-                videoId = existingLike.Video,
-                account = existingLike.Account,
-                unlike = existingLike.Unlike
-
-            });
-
+            like.Unlike = likeState;
+            await db.SaveChangesAsync();           
         }
-
+        return Ok(new
+        {
+        id = like.Id,
+        videoId = like.Video,
+        account = like.Account,
+        unlike = like.Unlike
+        });
     }
 
     [HttpDelete("{videoId}/like")]
@@ -324,6 +309,6 @@ public class VideosController : Controller
         db.Likes.Remove(like);
         await db.SaveChangesAsync();
 
-        return Ok(new { message = "Like/Dislike has been removed" });
+        return Ok();
     }
 }
