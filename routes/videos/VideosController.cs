@@ -374,4 +374,53 @@ public class VideosController : Controller
 
         return Ok();
     }
+
+
+    [HttpPost("{videoId}/like")]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    [RequiresUserAccount]
+    public async Task<IActionResult> LikeVideo(YoutubeContext db, [FromBody] AddVideoLikeModel body)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier);
+        bool likeState = body.value == -1;
+        Like like = await db.Likes.FirstOrDefaultAsync(l => l.Video == body.videoId && l.Account == long.Parse(userId.Value!));
+        if (like==null)
+        {
+            like = new Like
+            {
+                Video = (int)body.videoId,
+                Account = long.Parse(userId.Value!),
+                Unlike = likeState
+            };
+            db.Likes.Add(like);
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            like.Unlike = likeState;
+            await db.SaveChangesAsync();           
+        }
+        return Ok(new
+        {
+        id = like.Id,
+        videoId = like.Video,
+        account = like.Account,
+        unlike = like.Unlike
+        });
+    }
+
+    [HttpDelete("{videoId}/like")]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    [RequiresUserAccount]
+    public async Task<IActionResult> DeleteLike(YoutubeContext db, int videoId)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        var like = await db.Likes.FirstOrDefaultAsync(l => l.Video == videoId && l.Account == long.Parse(userId));
+
+        db.Likes.Remove(like);
+        await db.SaveChangesAsync();
+
+        return Ok();
+    }
 }

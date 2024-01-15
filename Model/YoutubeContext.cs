@@ -92,7 +92,7 @@ public partial class YoutubeContext : DbContext
             entity.HasIndex(e => e.Video, "fk_2_likes");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .ValueGeneratedOnAdd()
                 .HasColumnName("id");
             entity.Property(e => e.Account).HasColumnName("account");
             entity.Property(e => e.Unlike).HasColumnName("unlike");
