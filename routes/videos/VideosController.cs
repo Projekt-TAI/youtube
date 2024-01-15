@@ -262,57 +262,14 @@ public class VideosController : Controller
 
         return Ok();
     }
-     /* [HttpGet("{videoId}/like")] //do details albo request
- [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
- [RequiresUserAccount]
- public async Task<IActionResult> GetVideoLikes(YoutubeContext db, int videoID )
- {
-     var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-     
-     var userRating = await db.Likes
-         .Where(l => l.Video == videoID && l.Account == long.Parse(userId))
-         .Select(l => new { l.Unlike })
-         .FirstOrDefaultAsync();
-
-     if (userRating == null)
-     {
-         return Ok(new { rated = false });
-     }
-
-     return Ok(new
-     {
-         rated = true,
-         dislike = userRating.Unlike // 'true' jeśli to dislike, 'false' jeśli to like
-     });
- }
- */
 
      [HttpPost("{videoId}/like")]
     [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
     [RequiresUserAccount]
-    public async Task<IActionResult> LikeVideo(YoutubeContext db, [FromBody] AddVideoCommentModel body)
+    public async Task<IActionResult> LikeVideo(YoutubeContext db, [FromBody] AddVideoLikeModel body)
     {
-        Video? video = await db.Videos.FindAsync((int)body.videoId);
-        if (video == null)
-        {
-            return NotFound("404");
-        }
-
         var userId = User.FindFirst(ClaimTypes.NameIdentifier);
-
-        Like? likePrevID = await db.Likes
-        .OrderByDescending(l => l.Id)
-        .FirstOrDefaultAsync();
-
-        int likeID;
-
-        if (likePrevID == null)
-        {
-            likeID = 0;
-        }
-        else likeID=likePrevID.Id + 1;
-
         bool likeState;
 
         if (body.value == -1) likeState = true;
@@ -322,7 +279,6 @@ public class VideosController : Controller
         {
             Like like = new Like
             {
-                Id = likeID,
                 Video = (int)body.videoId,
                 Account = long.Parse(userId.Value!),
                 Unlike = likeState
