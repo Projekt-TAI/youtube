@@ -274,8 +274,8 @@ public class VideosController : Controller
 
         if (body.value == -1) likeState = true;
         else likeState = false;
-
-        if (!db.Likes.Any(l => l.Video == body.videoId && l.Account == long.Parse(userId.Value!)))
+        var existingLike = await db.Likes.FirstOrDefaultAsync(l => l.Video == body.videoId && l.Account == long.Parse(userId.Value!));
+        if (existingLike==null)
         {
             Like like = new Like
             {
@@ -291,24 +291,20 @@ public class VideosController : Controller
                 id = like.Id,
                 videoId = like.Video,
                 account = like.Account,
-                unlike = like.Unlike,
+                unlike = like.Unlike
 
             });
         }
         else
         {
-            var existingLike = await db.Likes.FirstOrDefaultAsync(l => l.Video == body.videoId && l.Account == long.Parse(userId.Value!));
-
             existingLike.Unlike = likeState;
-
             await db.SaveChangesAsync();
-
             return Ok(new
             {
                 id = existingLike.Id,
                 videoId = existingLike.Video,
                 account = existingLike.Account,
-                unlike = existingLike.Unlike,
+                unlike = existingLike.Unlike
 
             });
 
