@@ -1,6 +1,6 @@
 ﻿namespace TAIBackend.routes.videos.models;
 
-public partial class AddVideoCommentModel
+public partial class AddVideoLikeModel
 {
     public long videoId { get; set; }
 
