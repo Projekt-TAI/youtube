@@ -53,7 +53,7 @@ public class VideosController : Controller
     {
         var query = db.Videos
             .Include(v => v.Owneraccount)
-            .Where(v => v.Owneraccountid == userId)
+            .Where(v => v.OwneraccountId == userId)
             .OrderByDescending(v => v.Id);
 
         var subscriptionVideos = await query
@@ -89,7 +89,7 @@ public class VideosController : Controller
             .Include(s => s.Subscribedaccount)
             .ThenInclude(sa => sa.Videos)
             .ThenInclude(v => v.Owneraccount)
-            .Where(s => s.Owneraccountid == userIdParsed)
+            .Where(s => s.OwneraccountId == userIdParsed)
             .SelectMany(s => s.Subscribedaccount.Videos)
             .OrderByDescending(v => v.Id);
 
@@ -112,7 +112,7 @@ public class VideosController : Controller
     {
         Video video = await db.Videos.SingleAsync(v => v.Id == videoID);
 
-        return await GetVideoManifest(db, video.Owneraccountid.ToString(), video.Id);
+        return await GetVideoManifest(db, video.OwneraccountId.ToString(), video.Id);
     }
 
     [HttpGet("{videoID}/audio/{p1}/{p2}/{segmentNumber}")]
@@ -121,7 +121,7 @@ public class VideosController : Controller
     {
         Video video = await db.Videos.SingleAsync(v => v.Id == videoID);
 
-        return GetAudioSegment(video.Owneraccountid.ToString(), video.Id.ToString(), p1, p2, segmentNumber);
+        return GetAudioSegment(video.OwneraccountId.ToString(), video.Id.ToString(), p1, p2, segmentNumber);
     }
 
     [HttpGet("{videoID}/video/{p1}/{segmentNumber}")]
@@ -130,11 +130,11 @@ public class VideosController : Controller
     {
         Video video = await db.Videos.SingleAsync(v => v.Id == videoID);
 
-        return GetVideoSegment(video.Owneraccountid.ToString(), video.Id.ToString(), p1, segmentNumber);
+        return GetVideoSegment(video.OwneraccountId.ToString(), video.Id.ToString(), p1, segmentNumber);
     }
 
     [HttpGet("{authorID}/{videoID}/manifest.mpd")]
-    public async Task<IActionResult> GetVideoManifest(YoutubeContext db, string authorID, int videoID)
+    public async Task<IActionResult> GetVideoManifest(YoutubeContext db, string authorID, long videoID)
     {
         if (_targetFilePath == null)
         {
@@ -164,7 +164,7 @@ public class VideosController : Controller
 
         var vid = await db.Videos.SingleAsync(v => v.Id == videoID);
 
-        var videoDirectory = Path.Combine(_targetFilePath, vid.Owneraccountid.ToString(), videoID.ToString());
+        var videoDirectory = Path.Combine(_targetFilePath, vid.OwneraccountId.ToString(), videoID.ToString());
         if (!Path.Exists(Path.Combine(videoDirectory, "thumbnail.jpg")))
         {
             return NotFound("Thumbnail doesn't exists");
@@ -211,7 +211,7 @@ public class VideosController : Controller
     public async Task<IActionResult> GetVideosFromUser(YoutubeContext db, long authorId,
         [FromQuery(Name = "pageNumber")] int pageNumber, [FromQuery(Name = "pageSize")] int pageSize)
     {
-        var accs = await db.Videos.Where(v => v.Owneraccountid == authorId).OrderByDescending(v => v.Id)
+        var accs = await db.Videos.Where(v => v.OwneraccountId == authorId).OrderByDescending(v => v.Id)
             .Skip(pageNumber * pageSize).Take(pageSize).ToListAsync();
         return Ok(accs?.ToArray()
             .Select(video => new
@@ -276,7 +276,7 @@ public class VideosController : Controller
 
         await db.SaveChangesAsync();
 
-        return Ok(new
+        return StatusCode(201, new
         {
             id = newComment.Id,
             data = newComment.Data,
@@ -295,7 +295,13 @@ public class VideosController : Controller
         {
             var watcherId = User.FindFirst(ClaimTypes.NameIdentifier);
 
-            var v = await db.Videos.Include(v => v.Likes).Include(v => v.Owneraccount).SingleAsync(v => v.Id == videoId);
+            var watcherIdParsed = long.Parse(watcherId.Value);
+
+            var v = await db.Videos
+                .Include(v => v.Likes)
+                .Include(v => v.Owneraccount)
+                .SingleAsync(v => v.Id == videoId);
+
             var likes = v.Likes.ToList();
             var likeCount = likes.FindAll(l => l.Unlike == false).Count();
             var dislikeCount = likes.FindAll(l => l.Unlike == true).Count();
@@ -303,7 +309,9 @@ public class VideosController : Controller
             Like? like = null;
             if (watcherId != null)
             {
-                like = await db.Likes.Where(l => l.Video == v.Id).Where(l => l.Account == long.Parse(watcherId.Value)).FirstOrDefaultAsync();
+                like = await db.Likes
+                    .Where(l => l.VideoId == v.Id && l.AccountId == watcherIdParsed)
+                    .FirstOrDefaultAsync();
             }
             var isLiked = false;
             var isDisliked = false;
@@ -317,7 +325,7 @@ public class VideosController : Controller
             {
                 id = v.Id,
                 createdAt = v.CreatedAt,
-                userId = v.Owneraccountid,
+                userId = v.OwneraccountId,
                 userFullName = v.Owneraccount.Fullname,
                 profilePictureSrc = v.Owneraccount.ProfilePicUrl,
 
@@ -354,6 +362,8 @@ public class VideosController : Controller
             return StatusCode(500);
         }
 
+        var sharingUserIdParsed = long.Parse(sharingUserId.Value);
+
         var referer = HttpContext.Request.Headers.Referer;
         var videoUrl = $"{referer}watch/{videoId}";
 
@@ -362,7 +372,7 @@ public class VideosController : Controller
             .SingleAsync();
 
         var sharingUser = await db.Accounts
-            .Where(a => a.Id == long.Parse(sharingUserId.Value))
+            .Where(a => a.Id == sharingUserIdParsed)
             .SingleAsync();
 
         if (user == null || sharingUser == null)
@@ -386,30 +396,47 @@ public class VideosController : Controller
     public async Task<IActionResult> LikeVideo(YoutubeContext db, [FromBody] AddVideoLikeModel body)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier);
+
+        if (userId == null)
+        {
+            return StatusCode(500);
+        }
+
+        var userIdParsed = long.Parse(userId.Value!);
+
         bool likeState = body.value == -1;
-        Like like = await db.Likes.FirstOrDefaultAsync(l => l.Video == body.videoId && l.Account == long.Parse(userId.Value!));
-        if (like==null)
+        var like = await db.Likes
+            .FirstOrDefaultAsync(l => l.VideoId == body.videoId && l.AccountId == userIdParsed);
+
+        int statusCode;
+
+        if (like == null)
         {
             like = new Like
             {
-                Video = (int)body.videoId,
-                Account = long.Parse(userId.Value!),
+                VideoId = body.videoId,
+                AccountId = userIdParsed,
                 Unlike = likeState
             };
+
             db.Likes.Add(like);
             await db.SaveChangesAsync();
+
+            statusCode = 201; // Created status code
         }
         else
         {
             like.Unlike = likeState;
-            await db.SaveChangesAsync();           
+
+            await db.SaveChangesAsync();
+
+            statusCode = 200; // Updated status code
         }
-        return Ok(new
+
+        return StatusCode(statusCode, new
         {
-        id = like.Id,
-        videoId = like.Video,
-        account = like.Account,
-        unlike = like.Unlike
+            isLiked = !like.Unlike,
+            isDisliked = like.Unlike
         });
     }
 
@@ -420,7 +447,15 @@ public class VideosController : Controller
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        var like = await db.Likes.FirstOrDefaultAsync(l => l.Video == videoId && l.Account == long.Parse(userId));
+        if (userId == null)
+        {
+            return StatusCode(500);
+        }
+
+        var userIdParsed = long.Parse(userId);
+
+        var like = await db.Likes
+            .FirstOrDefaultAsync(l => l.VideoId == videoId && l.AccountId == userIdParsed);
 
         db.Likes.Remove(like);
         await db.SaveChangesAsync();

@@ -9,6 +9,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using TAIBackend.Model;
 using NuGet.Protocol;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace TAIBackend.routes.streaming;
 
@@ -41,6 +42,8 @@ public class StreamingController : Controller
     [DisableFormValueModelBinding]
     public async Task<IActionResult> EditPhysical(YoutubeContext db, int id)
     {
+        ModelState.Clear();
+
         if (Request.ContentType == null)
         {
             return BadRequest();
@@ -211,12 +214,23 @@ public class StreamingController : Controller
     [DisableFormValueModelBinding]
     public async Task<IActionResult> CreatePhysical(YoutubeContext db)
     {
+        ModelState.Clear();
+
         if (Request.ContentType == null)
         {
             return BadRequest();
         }
 
-        var id = 0;
+        var ownerAccountId = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
+        var ownerAccountIdParsed = long.Parse(ownerAccountId);
+
+        var owner = await db.Accounts.FindAsync(ownerAccountIdParsed);
+        if (owner == null)
+        {
+            return StatusCode(500, "Owner does not exist in DB");
+        }
+
+        long id = 1;
         if (db.Videos.Any())
         {
             var maxId = await db.Videos.MaxAsync(table => table.Id);
@@ -225,7 +239,8 @@ public class StreamingController : Controller
 
         Video video = new Video
         {
-            Id = id
+            Id = id,
+            OwneraccountId = ownerAccountIdParsed
         };
 
         if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
@@ -377,13 +392,6 @@ public class StreamingController : Controller
             video.Category = int.Parse(category);
         }
 
-        var owner = await db.Accounts.FindAsync(Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value));
-        if (owner == null)
-        {
-            return StatusCode(500, "Owner does not exist in DB");
-        }
-
-        video.Owneraccountid = Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         db.Add(video);
         await db.SaveChangesAsync();
 
