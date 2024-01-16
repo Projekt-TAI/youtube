@@ -216,7 +216,7 @@ public class StreamingController : Controller
             return BadRequest();
         }
 
-        var id = 0;
+        long id = 0;
         if (db.Videos.Any())
         {
             var maxId = await db.Videos.MaxAsync(table => table.Id);
@@ -377,13 +377,16 @@ public class StreamingController : Controller
             video.Category = int.Parse(category);
         }
 
-        var owner = await db.Accounts.FindAsync(Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value));
+        var ownerAccountId = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
+        var ownerAccountIdParsed = long.Parse(ownerAccountId);
+
+        var owner = await db.Accounts.FindAsync(ownerAccountIdParsed);
         if (owner == null)
         {
             return StatusCode(500, "Owner does not exist in DB");
         }
 
-        video.Owneraccountid = Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        video.OwneraccountId = ownerAccountIdParsed;
         db.Add(video);
         await db.SaveChangesAsync();
 

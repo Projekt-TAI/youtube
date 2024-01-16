@@ -5,15 +5,13 @@ namespace TAIBackend.Model;
 
 public partial class Like
 {
-    public int Id { get; set; }
+    public long VideoId { get; set; }
 
-    public int Video { get; set; }
-
-    public long Account { get; set; }
+    public long AccountId { get; set; }
 
     public bool Unlike { get; set; }
 
-    public virtual Account AccountNavigation { get; set; } = null!;
+    public virtual Account Account { get; set; } = null!;
 
-    public virtual Video VideoNavigation { get; set; } = null!;
+    public virtual Video Video { get; set; } = null!;
 }

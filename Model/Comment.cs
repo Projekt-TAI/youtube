@@ -7,9 +7,9 @@ public partial class Comment
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int Id { get; set; }
+    public long Id { get; set; }
 
-    public int Videoid { get; set; }
+    public long Videoid { get; set; }
 
     public string Data { get; set; } = null!;
 

@@ -8,13 +8,13 @@ public partial class Video
 {
     public DateTime CreatedAt {get; private set;} = DateTime.UtcNow;
 
-    public int Id { get; set; }
+    public long Id { get; set; }
 
     public string Title { get; set; } = null!;
 
     public string? Description { get; set; }
 
-    public long Owneraccountid { get; set; }
+    public long OwneraccountId { get; set; }
 
     public int Views { get; set; }
 

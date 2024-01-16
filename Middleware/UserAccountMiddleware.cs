@@ -57,7 +57,7 @@ public class UserAccountMiddleware
 
         var account = new Account
         {
-            Id = Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
+            Id = long.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
             Firstname = User.FindFirst(ClaimTypes.GivenName)!.Value,
             Fullname = User.FindFirst(ClaimTypes.Name)!.Value,
             Email = User.FindFirst(ClaimTypes.Email)!.Value,

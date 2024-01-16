@@ -17,12 +17,16 @@ public class SubscriptionController : Controller
     {
         try
         {
-            var ownerAccountId = Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var subs = await db.Subscriptions.Where(s => s.Owneraccountid == ownerAccountId).Include(s=>s.Subscribedaccount).ToListAsync();
+            var ownerAccountId = long.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var subs = await db.Subscriptions
+                .Include(s => s.Subscribedaccount)
+                .Where(s => s.OwneraccountId == ownerAccountId)
+                .ToListAsync();
+
             return Ok(
                 subs.ToArray().Select(s => new
                 {
-                    userId = s.Subscribedaccountid, 
+                    userId = s.SubscribedaccountId, 
                     userFullName = s.Subscribedaccount.Fullname,
                     profilePictureSrc = s.Subscribedaccount.ProfilePicUrl,
                 })
@@ -41,25 +45,24 @@ public class SubscriptionController : Controller
     {
         try
         {
+            var ownerAccountId = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
+            var ownerAccountIdParsed = long.Parse(ownerAccountId);
+
+            // Make sure that the account we are trying to subscribe exists
             await db.Accounts.SingleAsync(a => a.Id == userId);
-            var s = await db.Subscriptions.Where(s =>
-                s.Owneraccountid == Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value) &&
-                s.Subscribedaccountid == userId).ToListAsync();
-            
-            if (s.Count > 0)
-            {
-                return BadRequest($"User has already subscribed to user {userId}");
-            }
+
             var sub = new Subscription
             {
-                Owneraccountid = Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
-                Subscribedaccountid = userId
+                OwneraccountId = ownerAccountIdParsed,
+                SubscribedaccountId = userId
             };
 
             await db.Subscriptions.AddAsync(sub);
             await db.SaveChangesAsync();
-            return StatusCode(201, new { 
-                userId = sub.Subscribedaccountid, 
+
+            return StatusCode(201, new 
+            { 
+                userId = sub.SubscribedaccountId, 
                 userFullName = sub.Subscribedaccount.Fullname,
                 profilePictureSrc = sub.Subscribedaccount.ProfilePicUrl,
             });
@@ -77,19 +80,20 @@ public class SubscriptionController : Controller
     {
         try
         {
-            var sub = new Subscription
-            {
-                Owneraccountid = Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value),
-                Subscribedaccountid = userId
-            };
+            var ownerAccountId = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
+            var ownerAccountIdParsed = long.Parse(ownerAccountId);
 
-            var s = await db.Subscriptions.SingleAsync(s =>
-                s.Owneraccountid == Int64.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value) &&
-                s.Subscribedaccountid == userId);
-            db.Subscriptions.Attach(s);
+            var s = await db.Subscriptions
+                .SingleAsync(s =>
+                    s.OwneraccountId == ownerAccountIdParsed &&
+                    s.SubscribedaccountId == userId
+                );
+
             db.Subscriptions.Remove(s);
+
             await db.SaveChangesAsync();
-            return StatusCode(200, new { userId = sub.Subscribedaccountid });
+
+            return StatusCode(200);
         }
         catch (Exception e)
         {

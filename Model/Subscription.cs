@@ -5,15 +5,11 @@ namespace TAIBackend.Model;
 
 public class Subscription
 {    
-    [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int Id { get; set; }
-    
     public virtual Account Owneraccount { get; set; }
     
-    public long Owneraccountid { get; set; }
+    public long OwneraccountId { get; set; }
     
     public virtual Account Subscribedaccount { get; set; }
     
-    public long Subscribedaccountid { get; set; }
+    public long SubscribedaccountId { get; set; }
 }

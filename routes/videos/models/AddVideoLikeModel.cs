@@ -2,7 +2,7 @@
 
 public partial class AddVideoLikeModel
 {
-    public long videoId { get; set; }
+    public int videoId { get; set; }
 
     public int value { get; set; }
 }
