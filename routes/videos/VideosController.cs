@@ -435,8 +435,6 @@ public class VideosController : Controller
 
         return StatusCode(statusCode, new
         {
-            videoId = like.VideoId,
-            accountId = like.AccountId,
             isLiked = !like.Unlike,
             isDisliked = like.Unlike
         });
