@@ -56,7 +56,7 @@ public partial class YoutubeContext : DbContext
 
             entity.HasIndex(e => e.Videoid, "fk_1_comments");
 
-            entity.HasIndex(e => e.Commenterid, "fk_3_comments");
+            entity.HasIndex(e => e.Commenterid, "fk_2_comments");
 
             entity.Property(e => e.Id)
                 .ValueGeneratedOnAdd()
@@ -73,12 +73,12 @@ public partial class YoutubeContext : DbContext
             entity.HasOne(d => d.Commenter).WithMany(p => p.Comments)
                 .HasForeignKey(d => d.Commenterid)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_4_comments");
+                .HasConstraintName("fk_3_comments");
 
             entity.HasOne(d => d.Video).WithMany(p => p.Comments)
                 .HasForeignKey(d => d.Videoid)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_3_comments");
+                .HasConstraintName("fk_4_comments");
         });
 
         modelBuilder.Entity<Like>(entity =>
@@ -130,7 +130,7 @@ public partial class YoutubeContext : DbContext
             entity.HasOne(d => d.Owneraccount).WithMany(p => p.Videos)
                 .HasForeignKey(d => d.OwneraccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_1_videos");
+                .HasConstraintName("fk_2_videos");
         });
         
         modelBuilder.Entity<Subscription>(entity =>
