@@ -12,6 +12,7 @@ public partial class Comment
     public long Videoid { get; set; }
 
     public string Data { get; set; } = null!;
+    public bool IsEdited { get; set; } = false;
 
     public long Commenterid { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
