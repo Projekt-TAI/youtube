@@ -346,6 +346,11 @@ public class VideosController : Controller
         var comment = await db.Comments
             .FirstOrDefaultAsync(c => c.Id == commentId && c.Videoid == videoId && c.Commenterid == userIdParsed);
 
+        if (comment == null)
+        {
+            return NotFound();
+        }
+
         db.Comments.Remove(comment);
         await db.SaveChangesAsync();
 
