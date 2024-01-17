@@ -305,11 +305,81 @@ public class VideosController : Controller
         {
             id = newComment.Id,
             data = newComment.Data,
+            isEdited = newComment.IsEdited,
             createdAt = newComment.CreatedAt,
             userId = newComment.Commenterid,
             profilePictureSrc = newComment.Commenter.ProfilePicUrl,
-            videoId = newComment.Videoid,
+            videoId = newComment.Videoid
         });
+    }
+
+    [HttpPatch("{videoId}/comments/{commentId}")]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    [RequiresUserAccount]
+    public async Task<IActionResult> AddVideoComment(YoutubeContext db, long videoId, long commentId,
+        [FromBody] AddVideoCommentModel body)
+    {
+        var commenterId = User.FindFirst(ClaimTypes.NameIdentifier);
+
+        if (commenterId == null)
+        {
+            return StatusCode(500);
+        }
+
+        var commenterIdParsed = long.Parse(commenterId.Value);
+
+        var comment = await db.Comments
+            .FirstOrDefaultAsync(c => c.Id == commentId && c.Videoid == videoId && c.Commenterid == commenterIdParsed);
+
+        if (comment == null)
+        {
+            return NotFound();
+        }
+
+        comment.Data = body.data;
+        comment.CreatedAt = DateTime.UtcNow;
+        comment.IsEdited = true;
+
+        await db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            id = comment.Id,
+            data = comment.Data,
+            isEdited = comment.IsEdited,
+            createdAt = comment.CreatedAt,
+            userId = comment.Commenterid,
+            profilePictureSrc = comment.Commenter.ProfilePicUrl,
+            videoId = comment.Videoid,
+        });
+    }
+
+    [HttpDelete("{videoId}/comments/{commentId}")]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    [RequiresUserAccount]
+    public async Task<IActionResult> DeleteComment(YoutubeContext db, int videoId, int commentId)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (userId == null)
+        {
+            return StatusCode(500);
+        }
+
+        var userIdParsed = long.Parse(userId);
+
+        var comment = await db.Comments
+            .FirstOrDefaultAsync(c => c.Id == commentId && c.Videoid == videoId && c.Commenterid == userIdParsed);
+
+        if (comment == null)
+        {
+            return NotFound();
+        }
+
+        db.Comments.Remove(comment);
+        await db.SaveChangesAsync();
+
+        return Ok();
     }
 
     [HttpGet("{videoId}/details")]
@@ -319,8 +389,6 @@ public class VideosController : Controller
         try
         {
             var watcherId = User.FindFirst(ClaimTypes.NameIdentifier);
-
-            var watcherIdParsed = long.Parse(watcherId.Value);
 
             var v = await db.Videos
                 .Include(v => v.Likes)
@@ -334,6 +402,8 @@ public class VideosController : Controller
             Like? like = null;
             if (watcherId != null)
             {
+                var watcherIdParsed = long.Parse(watcherId.Value);
+
                 like = await db.Likes
                     .Where(l => l.VideoId == v.Id && l.AccountId == watcherIdParsed)
                     .FirstOrDefaultAsync();
