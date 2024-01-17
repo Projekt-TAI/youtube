@@ -107,6 +107,31 @@ public class VideosController : Controller
         });
     }
 
+    [HttpGet("trending")]
+    public async Task<IActionResult> GetTrendingVideos(YoutubeContext db, [FromQuery(Name = "pageNumber")] int pageNumber,
+        [FromQuery(Name = "pageSize")] int pageSize)
+    {
+        var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+
+        var query = db.Videos
+            .Include(v => v.Owneraccount)
+            .Where(v => v.CreatedAt >= sevenDaysAgo)
+            .OrderByDescending(v => v.Views);
+
+        var trendingVideos = await query
+            .Skip(pageNumber * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var count = query.Count();
+
+        return Ok(new
+        {
+            data = trendingVideos.ToArray().Select(video => VideoMapper.Map(video)),
+            count
+        });
+    }
+
     [HttpGet("{videoID}/manifest.mpd")]
     public async Task<IActionResult> GetVideoManifestFromID(YoutubeContext db, int videoID)
     {
@@ -462,23 +487,4 @@ public class VideosController : Controller
 
         return Ok();
     }
-
-    [HttpGet("trending")]
-    public IActionResult GetTrendingVideos(YoutubeContext db)
-    {
-        var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
-    
-        var trendingVideos = db.Videos
-            .Include(v => v.Owneraccount)
-            .Where(v => v.CreatedAt >= sevenDaysAgo)
-            .OrderByDescending(v => v.Views)
-            .ToList();
-    
-    return Ok(new
-    {
-        data = trendingVideos.ToArray().Select(video => VideoMapper.Map(video)),
-        count = trendingVideos.Count()
-    });
-
-}
 }
