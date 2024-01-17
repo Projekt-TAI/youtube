@@ -462,4 +462,23 @@ public class VideosController : Controller
 
         return Ok();
     }
+
+    [HttpGet("trending")]
+    public IActionResult GetTrendingVideos(YoutubeContext db)
+    {
+        var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+    
+        var trendingVideos = db.Videos
+            .Include(v => v.Owneraccount)
+            .Where(v => v.CreatedAt >= sevenDaysAgo)
+            .OrderByDescending(v => v.Views)
+            .ToList();
+    
+    return Ok(new
+    {
+        data = trendingVideos.ToArray().Select(video => VideoMapper.Map(video)),
+        count = trendingVideos.Count()
+    });
+
+}
 }
