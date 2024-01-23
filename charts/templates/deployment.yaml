@@ -50,3 +50,13 @@ spec:
               secretKeyRef:
                 name: facebook
                 key:  APP_SECRET
+          - name: MAIL_SENDER
+            value: taitubemail@gmail.com
+          - name: MAIL_HOST
+            value: "smtp.gmail.com"
+          - name: MAIL_PORT
+            value: "465"
+          - name: MAIL_LOGIN
+            value: taitubemail@gmail.com
+          - name: MAIL_PASSWORD
+            value: "hpia hkhn drwj nwnh"
