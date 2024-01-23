@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using TAIBackend.Model;
@@ -35,6 +36,11 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddDbContext<YoutubeContext>(options =>
             options.UseInMemoryDatabase("youtube"));
+
+builder.Services.Configure<KestrelServerOptions>(options =>
+{
+     options.Limits.MaxRequestBodySize = int.MaxValue; // if don't set default value is: 30 MB
+});
 
 builder.Services.AddAuthentication(options =>
 {
