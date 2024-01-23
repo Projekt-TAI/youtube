@@ -488,7 +488,7 @@ public class VideosController : Controller
     [HttpPost("{videoId}/like")]
     [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
     [RequiresUserAccount]
-    public async Task<IActionResult> LikeVideo(YoutubeContext db, [FromBody] AddVideoLikeModel body)
+    public async Task<IActionResult> LikeVideo(YoutubeContext db, [FromBody] AddVideoLikeModel body, long videoId)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier);
 
@@ -501,7 +501,7 @@ public class VideosController : Controller
 
         bool likeState = body.value == -1;
         var like = await db.Likes
-            .FirstOrDefaultAsync(l => l.VideoId == body.videoId && l.AccountId == userIdParsed);
+            .FirstOrDefaultAsync(l => l.VideoId == videoId && l.AccountId == userIdParsed);
 
         int statusCode;
 
@@ -509,7 +509,7 @@ public class VideosController : Controller
         {
             like = new Like
             {
-                VideoId = body.videoId,
+                VideoId = videoId,
                 AccountId = userIdParsed,
                 Unlike = likeState
             };
