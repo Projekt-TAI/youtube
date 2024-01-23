@@ -35,20 +35,18 @@ namespace TAIBackend.Utilities
 
             if (!RunProcess(mp4fragmentPath, $"{inputFilePath}.mp4 {inputFilePath}-fragmented.mp4"))
             {
-                Console.Out.WriteLine("Failed on fragment");
                 return 1;
             }
 
             if (!RunProcess(mp4dashPath, $"{inputFilePath}-fragmented.mp4 -o {videoDirectory} -f"))
             {
-                Console.Out.WriteLine("Failed on generating dash manifest");
                 return 1;
             }
 
-            /*if (!GetThumbnail($"{inputFilePath}.mp4",$"{videoDirectory}/thumbnail.jpg"))
+            if (!GetThumbnail($"{inputFilePath}.mp4",$"{videoDirectory}/thumbnail.jpg"))
             {
                 return 1;
-            }*/
+            }
 
             return 0;
         }
