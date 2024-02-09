@@ -51,7 +51,7 @@ builder.Services.AddAuthentication(options =>
     options.AppId = Environment.GetEnvironmentVariable("APP_ID") ?? throw new InvalidOperationException();
     options.AppSecret = Environment.GetEnvironmentVariable("APP_SECRET") ?? throw new InvalidOperationException();
     options.CorrelationCookie.Path = "/";
-    options.AccessDeniedPath = "/access-denied";
+    options.AccessDeniedPath = "/account/access-denied";
     options.SaveTokens = true;
 
     // TODO Paging

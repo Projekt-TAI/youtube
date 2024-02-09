@@ -251,6 +251,41 @@ public class VideosController : Controller
             .ToJson() ?? "null");
     }
 
+    [HttpPatch("{videoId}")]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    [RequiresUserAccount]
+    public async Task<IActionResult> EditVideo(YoutubeContext db, long videoId, [FromBody] EditVideoModel body)
+    {
+        var video = await db.Videos.Where(v => v.Id == videoId).FirstOrDefaultAsync();
+
+        if (video == null)
+        {
+            return NotFound();
+        }
+
+        var commenterId = User.FindFirst(ClaimTypes.NameIdentifier);
+
+        if (commenterId == null)
+        {
+            return StatusCode(500);
+        }
+
+        var commenterIdParsed = long.Parse(commenterId.Value);
+
+        if (video.OwneraccountId != commenterIdParsed)
+        {
+            return Forbid();
+        }
+
+        video.Title = body.title;
+        video.Description = body.description;
+        video.Category = body.category;
+
+        await db.SaveChangesAsync();
+
+        return Ok(VideoMapper.Map(video));
+    }
+
     [HttpGet("{videoId}/comments")]
     public async Task<IActionResult> GetVideoComments(YoutubeContext db, long videoId,
         [FromQuery(Name = "pageNumber")] int pageNumber, [FromQuery(Name = "pageSize")] int pageSize)
@@ -442,6 +477,20 @@ public class VideosController : Controller
             Console.WriteLine(e);
             throw;
         }
+    }
+
+    [HttpGet("{videoId}/info")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetVideoInfo(YoutubeContext db, int videoId)
+    {
+        var video = await db.Videos.FirstOrDefaultAsync(v => v.Id == videoId);
+
+        if (video == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(VideoMapper.Map(video));
     }
 
     [HttpPost("{videoId}/share/{userId}")]
