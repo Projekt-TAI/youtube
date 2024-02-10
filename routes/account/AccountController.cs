@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using NuGet.Protocol;
 using TAIBackend.Model;
@@ -25,6 +26,15 @@ public class AccountController : Controller
         var referer = HttpContext.Request.Headers.Referer;
         var properties = new AuthenticationProperties { RedirectUri = referer };
         return Challenge(properties, FacebookDefaults.AuthenticationScheme);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("access-denied")]
+    public IActionResult UserDeniedAccess()
+    {
+        StringValues value;
+        var hasValue = HttpContext.Request.Query.TryGetValue("ReturnUrl", out value);
+        return hasValue ? Redirect(value.First()!) : Forbid();
     }
 
     [HttpPost("logout")]
