@@ -21,6 +21,37 @@ public class VideosController : Controller
     {
         _targetFilePath = config.GetValue<string>("StoredFilesPath") ?? throw new InvalidOperationException();
     }
+    
+    [HttpDelete("{videoId}")]
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    [RequiresUserAccount]
+    public async Task<IActionResult> DeleteVideo(YoutubeContext db, long videoId)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userId == null)
+        {
+            return StatusCode(500);
+        }
+
+        var userIdParsed = long.Parse(userId.Value);
+        var video = await db.Videos.SingleAsync(v => v.Id == videoId);
+        if (video.OwneraccountId != userIdParsed)
+        {
+            return Forbid();
+        }
+
+        db.Videos.Remove(video);
+        
+        var videoDirectory = Path.Combine(_targetFilePath, video.OwneraccountId.ToString(), videoId.ToString());
+        if (Path.Exists(videoDirectory))
+        {
+            Directory.Delete(videoDirectory,true);
+        }
+
+        await db.SaveChangesAsync();
+
+        return Ok();
+    }
 
     [HttpGet(""), HttpGet("/")]
     public IActionResult GetVideos(YoutubeContext db, [FromQuery(Name = "pageNumber")] int pageNumber,
