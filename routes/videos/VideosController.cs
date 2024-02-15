@@ -34,7 +34,14 @@ public class VideosController : Controller
         }
 
         var userIdParsed = long.Parse(userId.Value);
-        var video = await db.Videos.SingleAsync(v => v.Id == videoId);
+
+        var video = await db.Videos.FirstOrDefaultAsync(v => v.Id == videoId);
+
+        if (video == null)
+        {
+            return NotFound();
+        }
+
         if (video.OwneraccountId != userIdParsed)
         {
             return Forbid();

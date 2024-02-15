@@ -72,12 +72,12 @@ public partial class YoutubeContext : DbContext
 
             entity.HasOne(d => d.Commenter).WithMany(p => p.Comments)
                 .HasForeignKey(d => d.Commenterid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("fk_3_comments");
 
             entity.HasOne(d => d.Video).WithMany(p => p.Comments)
                 .HasForeignKey(d => d.Videoid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("fk_4_comments");
         });
 
@@ -97,12 +97,12 @@ public partial class YoutubeContext : DbContext
 
             entity.HasOne(d => d.Account).WithMany(p => p.Likes)
                 .HasForeignKey(d => d.AccountId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("fk_6_likes");
 
             entity.HasOne(d => d.Video).WithMany(p => p.Likes)
                 .HasForeignKey(d => d.VideoId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("fk_7_likes");
         });
 
@@ -129,7 +129,7 @@ public partial class YoutubeContext : DbContext
 
             entity.HasOne(d => d.Owneraccount).WithMany(p => p.Videos)
                 .HasForeignKey(d => d.OwneraccountId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("fk_2_videos");
         });
         
@@ -147,12 +147,12 @@ public partial class YoutubeContext : DbContext
 
             entity.HasOne(d => d.Owneraccount).WithMany(p => p.Subscriptions)
                 .HasForeignKey(d => d.OwneraccountId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("fk_1_subscriptions");
 
             entity.HasOne(d => d.Subscribedaccount).WithMany(p => p.Subscribers)
                 .HasForeignKey(d => d.SubscribedaccountId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("fk_2_subscriptions");
         });
 
